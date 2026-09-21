@@ -1258,7 +1258,6 @@ class _CaretakerAuthScreenState extends State<CaretakerAuthScreen>
                   border: Border.all(
                     color: const Color(0xFF184E77).withValues(alpha: 0.14),
                   ),
-                  color: Colors.white,
                   boxShadow: [
                     BoxShadow(
                       color: AppTheme.deepForest.withValues(alpha: 0.04),
@@ -1267,36 +1266,41 @@ class _CaretakerAuthScreenState extends State<CaretakerAuthScreen>
                     ),
                   ],
                 ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                  onTap: () => _selectPatient(patient),
-                  leading: CircleAvatar(
-                    radius: 20,
-                    backgroundColor: const Color(0xFFE8F4F8),
-                    child: const Icon(Icons.person_rounded, color: Color(0xFF184E77), size: 22),
-                  ),
-                  title: Text(
-                    patient.nickname.isNotEmpty
-                        ? '${patient.name} (${patient.nickname})'
-                        : patient.name,
-                    style: GoogleFonts.outfit(
-                      fontSize: 15.5,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.deepForest,
+                child: Material(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  clipBehavior: Clip.antiAlias,
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                    onTap: () => _selectPatient(patient),
+                    leading: const CircleAvatar(
+                      radius: 20,
+                      backgroundColor: Color(0xFFE8F4F8),
+                      child: Icon(Icons.person_rounded, color: Color(0xFF184E77), size: 22),
                     ),
-                  ),
-                  subtitle: Text(
-                    'Pass Key: ${patient.pairingCode}',
-                    style: GoogleFonts.outfit(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF184E77),
+                    title: Text(
+                      patient.nickname.isNotEmpty
+                          ? '${patient.name} (${patient.nickname})'
+                          : patient.name,
+                      style: GoogleFonts.outfit(
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.deepForest,
+                      ),
                     ),
-                  ),
-                  trailing: const Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 15,
-                    color: Color(0xFF184E77),
+                    subtitle: Text(
+                      'Pass Key: ${patient.pairingCode}',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF184E77),
+                      ),
+                    ),
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 15,
+                      color: Color(0xFF184E77),
+                    ),
                   ),
                 ),
               );

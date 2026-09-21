@@ -35,6 +35,18 @@ class _AppShellState extends State<AppShell> {
         index: _selectedIndex,
         children: _screens,
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'global-saathi-action',
+        onPressed: () {
+          setState(() => _selectedIndex = 1);
+        },
+        backgroundColor: AppTheme.warmAmber,
+        foregroundColor: AppTheme.deepForest,
+        elevation: 6,
+        icon: const Icon(Icons.auto_awesome_rounded, size: 23),
+        label: const Text('Ask Saathi'),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: _LuxuryElderlyNavBar(
         selectedIndex: _selectedIndex,
         onSelect: (index) => setState(() => _selectedIndex = index),
@@ -76,9 +88,9 @@ class _LuxuryElderlyNavBar extends StatelessWidget {
           child: Row(
             children: [
               _navItem(0, Icons.home_outlined, Icons.home_rounded, 'Home'),
-              _navItem(1, Icons.mic_none_rounded, Icons.mic_rounded, 'Talk'),
+              _navItem(1, Icons.mic_none_rounded, Icons.mic_rounded, 'Voice Saathi'),
               _navItem(2, Icons.photo_album_outlined, Icons.photo_album_rounded, 'Memories'),
-              _navItem(3, Icons.extension_outlined, Icons.extension_rounded, 'Play'),
+              _navItem(3, Icons.extension_outlined, Icons.extension_rounded, 'Activities'),
               _navItem(4, Icons.people_outline_rounded, Icons.people_rounded, 'Family'),
             ],
           ),

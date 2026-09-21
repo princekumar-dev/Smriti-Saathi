@@ -531,6 +531,7 @@
     // Robust Multi-Tier Splash Dismissal Engine
     (function() {
       var isDismissed = false;
+      var removalTimer = null;
 
       function dismissSplash() {
         if (isDismissed) return;
@@ -539,9 +540,13 @@
         if (!loader) return;
         loader.classList.add("fade-out");
         loader.style.pointerEvents = "none";
-        setTimeout(function() {
-          if (loader && loader.parentNode) {
-            loader.parentNode.removeChild(loader);
+        removalTimer = setTimeout(function() {
+          try {
+            if (loader && loader.isConnected) {
+              loader.remove();
+            }
+          } catch (e) {
+            // The page may have been restored from the browser back-forward cache.
           }
         }, 600);
       }
@@ -554,12 +559,17 @@
         dismissSplash();
       });
 
-      // Tier 2: Dart DDC app ready event (all 557 modules loaded & main executed)
-      document.addEventListener("dart-app-ready", function() {
-        setTimeout(dismissSplash, 200);
+      // A restored page can receive a stale first-frame event after the splash
+      // has already been removed. Keep the cleanup state consistent.
+      window.addEventListener("pageshow", function() {
+        var loader = document.getElementById("app-splash-loader");
+        if (!loader && removalTimer) {
+          clearTimeout(removalTimer);
+          removalTimer = null;
+        }
       });
 
-      // Tier 3: Verify actual painted canvas / scene in DOM
+      // Tier 2: Verify actual painted canvas / scene in DOM
       function checkCanvasRendered() {
         // In CanvasKit: flutter-view or glass-pane contains a real canvas
         var canvases = document.querySelectorAll("flutter-view canvas, flt-glass-pane canvas, canvas.flt-canvas");

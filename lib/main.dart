@@ -33,14 +33,14 @@ class _SmirithiSaathiAppState extends State<SmirithiSaathiApp> {
         auth: _auth,
         child: AuthSessionScope(
           session: _legacySession,
-          child: ListenableBuilder(
-            listenable: Listenable.merge([_settings, _auth]),
-            builder: (context, _) {
-              return MaterialApp(
-                title: 'Smriti Saathi',
-                debugShowCheckedModeBanner: false,
-                theme: AppTheme.light,
-                builder: (context, child) {
+          child: MaterialApp(
+            title: 'Smriti Saathi',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light,
+            builder: (context, child) {
+              return ListenableBuilder(
+                listenable: _settings,
+                builder: (context, _) {
                   return MediaQuery(
                     data: MediaQuery.of(context).copyWith(
                       textScaler: TextScaler.linear(_settings.textScale),
@@ -48,9 +48,12 @@ class _SmirithiSaathiAppState extends State<SmirithiSaathiApp> {
                     child: child ?? const SizedBox.shrink(),
                   );
                 },
-                home: _getInitialScreen(),
               );
             },
+            home: ListenableBuilder(
+              listenable: _auth,
+              builder: (context, _) => _getInitialScreen(),
+            ),
           ),
         ),
       ),

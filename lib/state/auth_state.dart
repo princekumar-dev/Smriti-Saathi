@@ -168,7 +168,9 @@ class AuthState extends ChangeNotifier {
       }
 
       // Sync registered patients from MongoDB Atlas in background if caretaker is known
-      refreshPatientsFromBackend();
+      if (_activeCaretaker != null && _activeCaretaker!.id.isNotEmpty) {
+        refreshPatientsFromBackend();
+      }
     } catch (_) {
       _currentRole = UserRole.unauthenticated;
     } finally {

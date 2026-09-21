@@ -163,7 +163,7 @@ class AppTheme {
         scrolledUnderElevation: 0,
         centerTitle: false,
         titleTextStyle: GoogleFonts.nunito(
-          fontSize: 24,
+          fontSize: 25,
           fontWeight: FontWeight.w900,
           color: ink,
           height: 1.2,
@@ -214,7 +214,7 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: paper,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 19),
         hintStyle: GoogleFonts.nunito(fontSize: 17, color: muted),
         labelStyle: GoogleFonts.nunito(
           fontSize: 17,
@@ -245,31 +245,31 @@ class AppTheme {
 
   static TextTheme get _textTheme => const TextTheme(
         displayLarge: TextStyle(
-          fontSize: 38,
+          fontSize: 40,
           fontWeight: FontWeight.w900,
           height: 1.15,
           color: ink,
         ),
         displaySmall: TextStyle(
-          fontSize: 32,
+          fontSize: 34,
           fontWeight: FontWeight.w900,
           height: 1.18,
           color: ink,
         ),
         headlineLarge: TextStyle(
-          fontSize: 28,
+          fontSize: 30,
           fontWeight: FontWeight.w800,
           height: 1.2,
           color: ink,
         ),
         headlineSmall: TextStyle(
-          fontSize: 24,
+          fontSize: 26,
           fontWeight: FontWeight.w800,
           height: 1.22,
           color: ink,
         ),
         titleLarge: TextStyle(
-          fontSize: 22,
+          fontSize: 23,
           fontWeight: FontWeight.w800,
           height: 1.25,
           color: ink,
@@ -293,7 +293,7 @@ class AppTheme {
           color: ink,
         ),
         bodyMedium: TextStyle(
-          fontSize: 16,
+          fontSize: 17,
           fontWeight: FontWeight.w600,
           height: 1.45,
           color: muted,
