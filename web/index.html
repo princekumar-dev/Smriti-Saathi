@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" flt-viewport>
+  <meta name="description" content="Smriti Saathi — Your AI Saathi for Everyday Life & Memories. An offline-first caring AI companion for elderly wellbeing.">
+  <meta name="theme-color" content="#184E77">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Smriti Saathi">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Smriti Saathi — Your AI Saathi for Everyday Life & Memories</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Bespoke Brand Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Comfortaa:wght@700&family=Noto+Color+Emoji&family=Noto+Sans:wght@400;600;700&family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* Reset & Viewport */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      min-height: 100vh;
+      min-height: 100dvh;
+      min-height: -webkit-fill-available;
+      background-color: #F9F6F0;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+
+    flutter-view {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Suppress & Disable Flutter's Default Dev Loading Bar (.flutter-loader) */
+    .flutter-loader,
+    .indeterminate,
+    [class*="flutter-loader"],
+    div.flutter-loader {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      height: 0px !important;
+      max-height: 0px !important;
+      width: 0px !important;
+      max-width: 0px !important;
+      position: absolute !important;
+      top: -9999px !important;
+      left: -9999px !important;
+      overflow: hidden !important;
+      z-index: -99999 !important;
+    }
+
+    /* Ambient Background Orbs */
+    .ambient-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.55;
+      animation: floatOrb 10s ease-in-out infinite alternate;
+    }
+
+    .orb-1 {
+      width: 340px;
+      height: 340px;
+      top: -80px;
+      left: -80px;
+      background: radial-gradient(circle, rgba(24, 78, 119, 0.28) 0%, rgba(212, 163, 115, 0.2) 65%, transparent 100%);
+    }
+
+    .orb-2 {
+      width: 380px;
+      height: 380px;
+      bottom: -100px;
+      right: -100px;
+      background: radial-gradient(circle, rgba(45, 106, 79, 0.3) 0%, rgba(82, 183, 136, 0.2) 65%, transparent 100%);
+      animation-delay: -5s;
+    }
+
+    /* Custom Web Splash & Loading Screen */
+    #app-splash-loader {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      z-index: 999999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 36%, #FFFFFF 0%, #FAF7F2 50%, #F3EEE5 100%);
+      transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+      -webkit-user-select: none;
+      padding: 16px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    #app-splash-loader.fade-out {
+      opacity: 0;
+      transform: scale(1.025);
+      pointer-events: none;
+    }
+
+    .splash-card {
+      position: relative;
+      z-index: 10;
+      width: min(92vw, 420px);
+      margin: auto;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1.5px solid rgba(24, 78, 119, 0.14);
+      border-radius: 34px;
+      padding: 38px 22px 28px;
+      text-align: center;
+      box-shadow: 
+        0 24px 60px -10px rgba(24, 78, 119, 0.16),
+        0 6px 20px rgba(0, 0, 0, 0.04),
+        0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Halo Glow & Logo */
+    .logo-halo {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(24, 78, 119, 0.16), rgba(82, 183, 136, 0.25), rgba(212, 163, 115, 0.22));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 22px;
+      box-shadow: 
+        0 14px 34px -4px rgba(24, 78, 119, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+      animation: pulseGlow 3s ease-in-out infinite;
+    }
+
+    .logo-badge {
+      width: 94px;
+      height: 94px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      box-shadow: 0 10px 24px rgba(24, 78, 119, 0.12);
+      border: 2px solid rgba(24, 78, 119, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .logo-img {
+      width: 68px;
+      height: 68px;
+      object-fit: contain;
+      display: block;
+      filter: drop-shadow(0 2px 6px rgba(24, 78, 119, 0.15));
+    }
+
+    /* Brand Name Typography (Comfortaa brand styling matching logo) */
+    .splash-title {
+      font-family: 'Comfortaa', 'Outfit', sans-serif;
+      font-size: 36px;
+      font-weight: 700;
+      color: #184E77;
+      margin: 0 0 6px;
+      letter-spacing: -0.4px;
+      line-height: 1.15;
+      text-shadow: 0 2px 10px rgba(24, 78, 119, 0.08);
+    }
+
+    .splash-subtitle {
+      font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif;
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #2D6A4F;
+      margin: 0 0 16px;
+      letter-spacing: 0.15px;
+      line-height: 1.35;
+    }
+
+    /* Motto Banner: 100% Vector Text & SVG Underline + Heart (Crystal Clear & Readable) */
+    .motto-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #FFFFFF;
+      border: 1.3px solid rgba(24, 78, 119, 0.14);
+      border-radius: 22px;
+      padding: 9px 20px 8px;
+      margin: 0 auto 20px;
+      box-shadow: 0 4px 16px rgba(24, 78, 119, 0.06);
+      width: 90%;
+      max-width: 300px;
+    }
+
+    .motto-text-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    .motto-text {
+      font-family: 'Caveat', cursive;
+      font-size: 23px;
+      font-weight: 700;
+      color: #184E77;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+    }
+
+    .motto-underline-svg {
+      width: 100%;
+      max-width: 250px;
+      height: 16px;
+      margin-top: 2px;
+      display: block;
+    }
+
+    /* Loading Track & Shimmer Indicator */
+    .progress-track {
+      width: 100%;
+      max-width: 260px;
+      height: 7px;
+      background: rgba(24, 78, 119, 0.12);
+      border-radius: 14px;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 48%;
+      border-radius: 14px;
+      background: linear-gradient(90deg, #184E77 0%, #2D6A4F 40%, #D4A373 75%, #184E77 100%);
+      box-shadow: 0 0 12px rgba(24, 78, 119, 0.4);
+      animation: shimmer 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    /* Live Dynamic Status */
+    .splash-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #334155;
+      letter-spacing: 0.15px;
+      min-height: 22px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #2D6A4F;
+      box-shadow: 0 0 8px rgba(45, 106, 79, 0.6);
+      animation: pulseDot 1.4s ease-in-out infinite;
+    }
+
+    #status-text {
+      transition: opacity 0.25s ease-in-out;
+    }
+
+    /* Reassurance Feature Chips */
+    .chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 7px;
+      margin-top: 18px;
+    }
+
+    .chip {
+      background: #FFFFFF;
+      border: 1px solid rgba(24, 78, 119, 0.14);
+      border-radius: 12px;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #184E77;
+      box-shadow: 0 2px 6px rgba(24, 78, 119, 0.04);
+      letter-spacing: 0.1px;
+    }
+
+    /* Keyframes */
+    @keyframes pulseGlow {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 14px 34px -4px rgba(24, 78, 119, 0.2);
+      }
+      50% {
+        transform: scale(1.05);
+        box-shadow: 0 18px 42px 0 rgba(24, 78, 119, 0.3);
+      }
+    }
+
+    @keyframes shimmer {
+      0% {
+        transform: translateX(-120%);
+      }
+      100% {
+        transform: translateX(320%);
+      }
+    }
+
+    @keyframes pulseDot {
+      0%, 100% {
+        opacity: 0.45;
+        transform: scale(0.85);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.25);
+      }
+    }
+
+    @keyframes floatOrb {
+      0% {
+        transform: translate(0, 0) scale(1);
+      }
+      100% {
+        transform: translate(30px, 20px) scale(1.1);
+      }
+    }
+
+    @media (max-width: 480px) {
+      #app-splash-loader {
+        padding: 14px;
+      }
+      .splash-card {
+        width: 100%;
+        max-width: 100%;
+        padding: 30px 18px 24px;
+        border-radius: 28px;
+      }
+      .logo-halo {
+        width: 106px;
+        height: 106px;
+        margin-bottom: 16px;
+      }
+      .logo-badge {
+        width: 84px;
+        height: 84px;
+      }
+      .logo-img {
+        width: 60px;
+        height: 60px;
+      }
+      .splash-title {
+        font-size: 31px;
+        margin-bottom: 4px;
+      }
+      .splash-subtitle {
+        font-size: 13.5px;
+        margin-bottom: 14px;
+      }
+      .motto-card {
+        width: 96%;
+        max-width: 300px;
+        padding: 7px 14px;
+        margin-bottom: 16px;
+      }
+      .motto-text {
+        font-size: 20px;
+      }
+      .progress-track {
+        max-width: 230px;
+      }
+      .chips-row {
+        gap: 6px;
+        margin-top: 15px;
+      }
+      .chip {
+        font-size: 11px;
+        padding: 4px 9px;
+      }
+    }
+
+    @media (max-height: 660px) {
+      .splash-card {
+        padding: 22px 16px 18px;
+        border-radius: 24px;
+      }
+      .logo-halo {
+        width: 86px;
+        height: 86px;
+        margin-bottom: 10px;
+      }
+      .logo-badge {
+        width: 68px;
+        height: 68px;
+      }
+      .logo-img {
+        width: 48px;
+        height: 48px;
+      }
+      .splash-title {
+        font-size: 26px;
+        margin-bottom: 2px;
+      }
+      .splash-subtitle {
+        font-size: 12.5px;
+        margin-bottom: 10px;
+      }
+      .motto-card {
+        margin-bottom: 10px;
+        padding: 5px 12px;
+      }
+      .motto-text {
+        font-size: 18px;
+      }
+      .progress-track {
+        margin-bottom: 10px;
+        height: 6px;
+      }
+      .splash-status {
+        font-size: 13px;
+        min-height: 18px;
+      }
+      .chips-row {
+        margin-top: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient Floating Orbs -->
+  <div class="ambient-orb orb-1"></div>
+  <div class="ambient-orb orb-2"></div>
+
+  <!-- Smriti Saathi Brand Loading Screen -->
+  <div id="app-splash-loader" aria-label="Loading Smriti Saathi">
+    <div class="splash-card">
+      <div class="logo-halo">
+        <div class="logo-badge">
+          <img src="logo.png" alt="Smriti Saathi" class="logo-img" onerror="this.src='favicon.png'">
+        </div>
+      </div>
+
+      <!-- Enhanced Brand Title (Comfortaa brand styling) -->
+      <h1 class="splash-title">Smriti Saathi</h1>
+      <p class="splash-subtitle">Your AI Saathi for Everyday Life & Memories</p>
+
+      <!-- 100% Crisp Vector Text Motto Banner with SVG Flourish -->
+      <div class="motto-card">
+        <div class="motto-text-row">
+          <span class="motto-text">Because every memory matters...</span>
+        </div>
+        <svg class="motto-underline-svg" viewBox="0 0 250 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Gentle curved underline swoosh -->
+          <path d="M 6 8 Q 120 14 210 7" stroke="#184E77" stroke-width="2.2" stroke-linecap="round"/>
+          <!-- Matching outline heart -->
+          <path d="M 221 5.5 C 219 2.5, 215 3.5, 216 7 C 217.5 10, 223 13, 225 14.5 C 227 13, 232.5 10, 234 7 C 235 3.5, 231 2.5, 229 5.5 L 225 9 Z" 
+                stroke="#184E77" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <div class="progress-track">
+        <div class="progress-bar"></div>
+      </div>
+
+      <div class="splash-status">
+        <span class="status-dot"></span>
+        <span id="status-text">Starting your companion...</span>
+      </div>
+
+      <div class="chips-row">
+        <span class="chip">🔒 100% Private</span>
+        <span class="chip">⚡ Offline-Ready</span>
+        <span class="chip">🎙️ Voice First</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Smooth dynamic reassuring status cycler
+    (function() {
+      var messages = [
+        "Starting your companion...",
+        "Preparing your safe sanctuary...",
+        "Preserving precious memories...",
+        "Almost ready for you..."
+      ];
+      var idx = 0;
+      var statusEl = document.getElementById("status-text");
+      if (statusEl) {
+        setInterval(function() {
+          idx = (idx + 1) % messages.length;
+          statusEl.style.opacity = "0";
+          setTimeout(function() {
+            statusEl.textContent = messages[idx];
+            statusEl.style.opacity = "1";
+          }, 200);
+        }, 2400);
+      }
+    })();
+
+    // Robust Multi-Tier Splash Dismissal Engine
+    (function() {
+      var isDismissed = false;
+
+      function dismissSplash() {
+        if (isDismissed) return;
+        isDismissed = true;
+        var loader = document.getElementById("app-splash-loader");
+        if (!loader) return;
+        loader.classList.add("fade-out");
+        loader.style.pointerEvents = "none";
+        setTimeout(function() {
+          if (loader && loader.parentNode) {
+            loader.parentNode.removeChild(loader);
+          }
+        }, 600);
+      }
+
+      // Expose globally for Flutter / Dart to invoke if needed
+      window.dismissSplash = dismissSplash;
+
+      // Tier 1: Native Flutter first-frame painted event (guaranteed UI painted)
+      window.addEventListener("flutter-first-frame", function() {
+        dismissSplash();
+      });
+
+      // Tier 2: Dart DDC app ready event (all 557 modules loaded & main executed)
+      document.addEventListener("dart-app-ready", function() {
+        setTimeout(dismissSplash, 200);
+      });
+
+      // Tier 3: Verify actual painted canvas / scene in DOM
+      function checkCanvasRendered() {
+        // In CanvasKit: flutter-view or glass-pane contains a real canvas
+        var canvases = document.querySelectorAll("flutter-view canvas, flt-glass-pane canvas, canvas.flt-canvas");
+        for (var i = 0; i < canvases.length; i++) {
+          if (canvases[i].width > 0 && canvases[i].height > 0) {
+            return true;
+          }
+        }
+        // In HTML renderer: scene host with rendered nodes
+        var scene = document.querySelector("flt-scene-host, flt-scene");
+        if (scene && scene.children && scene.children.length > 0) {
+          return true;
+        }
+        return false;
+      }
+
+      try {
+        var observer = new MutationObserver(function() {
+          if (checkCanvasRendered()) {
+            setTimeout(dismissSplash, 150);
+            observer.disconnect();
+          }
+        });
+        observer.observe(document.body || document.documentElement, {
+          childList: true,
+          subtree: true
+        });
+      } catch (e) {}
+
+      // Tier 4: Gentle poller checking for actual rendered canvas
+      var renderPoller = setInterval(function() {
+        if (checkCanvasRendered()) {
+          clearInterval(renderPoller);
+          dismissSplash();
+        }
+      }, 250);
+
+      // Tier 5: Generous safety fallback (only if network completely stalled for 45s)
+      setTimeout(function() {
+        clearInterval(renderPoller);
+        dismissSplash();
+      }, 45000);
+
+      // Tier 6: Manual user tap to dismiss if they want to enter immediately
+      var splashEl = document.getElementById("app-splash-loader");
+      if (splashEl) {
+        splashEl.addEventListener("click", function() {
+          dismissSplash();
+        });
+      }
+    })();
+  </script>
+
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
