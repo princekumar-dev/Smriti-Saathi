@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
+import '../../data/app_translations.dart';
 import '../../navigation/app_shell.dart';
+import '../../state/app_settings.dart';
 import '../../state/auth_state.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/animated_scale_button.dart';
 import '../caretaker/caretaker_dashboard_screen.dart';
 
 class PatientRegistrationScreen extends StatefulWidget {
@@ -39,15 +43,9 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
     'Parkinson\'s Assistance',
     'General Senior Wellness & Companion',
   ];
-  final List<String> _languages = [
-    'English',
-    'Hindi (हिंदी)',
-    'Tamil (தமிழ்)',
-    'Telugu (తెలుగు)',
-    'Kannada (ಕನ್ನಡ)',
-    'Bengali (বাংলা)',
-    'Marathi (मराठी)',
-  ];
+  late final List<String> _languages = AppTranslations.supportedLanguages
+      .map((l) => l.englishName == 'English' ? 'English' : '${l.englishName} (${l.nativeName})')
+      .toList();
 
   @override
   void dispose() {
@@ -58,21 +56,6 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
     _emergencyPhoneController.dispose();
     _notesController.dispose();
     super.dispose();
-  }
-
-  void _fillSamplePatient() {
-    setState(() {
-      _nameController.text = 'Kamala Raman';
-      _nicknameController.text = 'Amma';
-      _ageController.text = '74';
-      _selectedGender = 'Female';
-      _selectedCondition = 'Mild Memory Loss';
-      _selectedLanguage = 'English';
-      _emergencyNameController.text = 'Meena (Daughter)';
-      _emergencyPhoneController.text = '+91 98765 43210';
-      _notesController.text =
-          'Enjoys Carnatic music, filter coffee, morning garden walks, and childhood stories.';
-    });
   }
 
   Future<void> _submitRegistration() async {
@@ -137,52 +120,67 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
               Container(
                 width: 64,
                 height: 64,
-                decoration: const BoxDecoration(
-                  color: AppTheme.sage,
+                decoration: BoxDecoration(
+                  gradient: AppTheme.emeraldGradient,
                   shape: BoxShape.circle,
+                  boxShadow: AppTheme.buttonGlow,
                 ),
                 child: const Icon(
                   Icons.check_circle_rounded,
-                  color: AppTheme.forest,
+                  color: Colors.white,
                   size: 38,
                 ),
               ),
               const SizedBox(height: 16),
               Text(
-                'Patient Registered Successfully!',
+                'Patient Registered!',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppTheme.deepForest,
-                      fontWeight: FontWeight.w900,
-                    ),
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.deepForest,
+                  letterSpacing: -0.3,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
-                '${patient.name} has been set up with personalized memory and companion routines.',
+                '${patient.name} has been set up with personalized\nmemory and companion routines.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                style: GoogleFonts.dmSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
                   color: AppTheme.muted,
+                  height: 1.4,
                 ),
               ),
               const SizedBox(height: 24),
 
               // Pairing Code Box
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 decoration: BoxDecoration(
-                  color: AppTheme.cream,
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.cream,
+                      AppTheme.paleSage.withValues(alpha: 0.3),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
                   borderRadius: BorderRadius.circular(AppTheme.radius18),
-                  border: Border.all(color: AppTheme.forest, width: 1.8),
+                  border: Border.all(
+                    color: AppTheme.forest,
+                    width: 1.8,
+                  ),
                 ),
                 child: Column(
                   children: [
-                    const Text(
+                    Text(
                       'PATIENT PAIRING CODE',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
                         color: AppTheme.forest,
                         letterSpacing: 1.2,
                       ),
@@ -193,9 +191,9 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                       children: [
                         Text(
                           patient.pairingCode,
-                          style: const TextStyle(
+                          style: GoogleFonts.dmSans(
                             fontSize: 28,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                             color: AppTheme.deepForest,
                             letterSpacing: 2.0,
                           ),
@@ -208,22 +206,24 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                             );
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Pairing code copied to clipboard!'),
+                                content: Text(
+                                    'Pairing code copied to clipboard!'),
                               ),
                             );
                           },
-                          icon: const Icon(Icons.copy_rounded, color: AppTheme.forest),
+                          icon: const Icon(Icons.copy_rounded,
+                              color: AppTheme.forest),
                           tooltip: 'Copy Code',
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'Use this code when opening the app on the senior\'s phone/tablet.',
+                    Text(
+                      'Use this code when opening the app\non the senior\'s phone/tablet.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
                         color: AppTheme.muted,
                       ),
                     ),
@@ -247,7 +247,10 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                     );
                   },
                   icon: const Icon(Icons.dashboard_rounded),
-                  label: const Text('Go to Caretaker Dashboard'),
+                  label: Text(
+                    'Go to Caretaker Dashboard',
+                    style: AppTheme.buttonText(),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -266,16 +269,23 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.elderly_rounded, color: AppTheme.forest),
-                  label: const Text(
+                  icon: const Icon(Icons.elderly_rounded,
+                      color: AppTheme.forest),
+                  label: Text(
                     'Launch Elder Companion View Now',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                    style: GoogleFonts.dmSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.forest,
+                    ),
                   ),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 54),
-                    side: const BorderSide(color: AppTheme.forest, width: 1.6),
+                    side: const BorderSide(
+                        color: AppTheme.forest, width: 1.6),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radius18),
+                      borderRadius:
+                          BorderRadius.circular(AppTheme.radius18),
                     ),
                   ),
                 ),
@@ -287,6 +297,57 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
     );
   }
 
+  InputDecoration _premiumInput({
+    required String hintText,
+    required IconData icon,
+  }) {
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: AppTheme.inputHint(),
+      prefixIcon: Icon(icon, color: AppTheme.forest),
+      filled: true,
+      fillColor: AppTheme.paper,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radius18),
+        borderSide: BorderSide(
+            color: AppTheme.divider.withValues(alpha: 0.8)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radius18),
+        borderSide: BorderSide(
+            color: AppTheme.divider.withValues(alpha: 0.8)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radius18),
+        borderSide: const BorderSide(
+            color: AppTheme.forest, width: 1.8),
+      ),
+    );
+  }
+
+  Widget _premiumLabel(String text, {bool required = false}) {
+    return Text.rich(
+      TextSpan(
+        text: text,
+        style: GoogleFonts.dmSans(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: AppTheme.deepForest,
+        ),
+        children: required
+            ? const [
+                TextSpan(
+                  text: ' *',
+                  style: TextStyle(color: AppTheme.coral),
+                ),
+              ]
+            : null,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -295,17 +356,18 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.forest),
+          icon: const Icon(Icons.arrow_back_rounded,
+              color: AppTheme.forest),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Register Patient / Elder'),
-        actions: [
-          TextButton.icon(
-            onPressed: _fillSamplePatient,
-            icon: const Icon(Icons.auto_awesome_rounded, size: 18),
-            label: const Text('Sample Data'),
+        title: Text(
+          'Register Patient / Elder',
+          style: GoogleFonts.dmSans(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.deepForest,
           ),
-        ],
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -313,40 +375,66 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Info Banner
+              // Premium Info Banner
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppTheme.paper,
-                  borderRadius: BorderRadius.circular(AppTheme.radius20),
-                  border: Border.all(color: AppTheme.divider, width: 1.2),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.white,
+                      AppTheme.paleSage.withValues(alpha: 0.3),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius:
+                      BorderRadius.circular(AppTheme.radius20),
+                  border: Border.all(
+                    color: AppTheme.forest.withValues(alpha: 0.1),
+                    width: 1.2,
+                  ),
+                  boxShadow: AppTheme.softShadow,
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.person_add_alt_1_rounded,
-                      color: AppTheme.forest,
-                      size: 32,
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppTheme.paleSage,
+                            AppTheme.sage.withValues(alpha: 0.5),
+                          ],
+                        ),
+                        borderRadius:
+                            BorderRadius.circular(AppTheme.radius14),
+                      ),
+                      child: const Icon(
+                        Icons.person_add_alt_1_rounded,
+                        color: AppTheme.forest,
+                        size: 28,
+                      ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Elder Companion Profile',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
                               color: AppTheme.deepForest,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             'Saathi uses this to personalize voice conversations, memory reminders, and health alerts.',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
                               color: AppTheme.muted,
                             ),
                           ),
@@ -357,29 +445,17 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
 
               // Name & Nickname
-              const Text(
-                'Full Name *',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.deepForest,
-                ),
-              ),
+              _premiumLabel('Full Name', required: true),
               const SizedBox(height: 8),
               TextField(
                 controller: _nameController,
-                decoration: InputDecoration(
+                style: AppTheme.inputText(),
+                decoration: _premiumInput(
                   hintText: 'e.g. Kamala Raman',
-                  prefixIcon: const Icon(Icons.badge_outlined, color: AppTheme.forest),
-                  filled: true,
-                  fillColor: AppTheme.paper,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.radius18),
-                    borderSide: const BorderSide(color: AppTheme.divider),
-                  ),
+                  icon: Icons.badge_outlined,
                 ),
               ),
 
@@ -390,26 +466,14 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Calling / Pet Name',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.deepForest,
-                          ),
-                        ),
+                        _premiumLabel('Calling / Pet Name'),
                         const SizedBox(height: 8),
                         TextField(
                           controller: _nicknameController,
-                          decoration: InputDecoration(
+                          style: AppTheme.inputText(),
+                          decoration: _premiumInput(
                             hintText: 'e.g. Amma / Dada Ji',
-                            prefixIcon: const Icon(Icons.favorite_outline, color: AppTheme.forest),
-                            filled: true,
-                            fillColor: AppTheme.paper,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(AppTheme.radius18),
-                              borderSide: const BorderSide(color: AppTheme.divider),
-                            ),
+                            icon: Icons.favorite_outline,
                           ),
                         ),
                       ],
@@ -421,26 +485,15 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Age *',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.deepForest,
-                          ),
-                        ),
+                        _premiumLabel('Age', required: true),
                         const SizedBox(height: 8),
                         TextField(
                           controller: _ageController,
                           keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
+                          style: AppTheme.inputText(),
+                          decoration: _premiumInput(
                             hintText: '74',
-                            filled: true,
-                            fillColor: AppTheme.paper,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(AppTheme.radius18),
-                              borderSide: const BorderSide(color: AppTheme.divider),
-                            ),
+                            icon: Icons.cake_outlined,
                           ),
                         ),
                       ],
@@ -458,32 +511,40 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Gender',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.deepForest,
-                          ),
-                        ),
+                        _premiumLabel('Gender'),
                         const SizedBox(height: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14),
                           decoration: BoxDecoration(
                             color: AppTheme.paper,
-                            borderRadius: BorderRadius.circular(AppTheme.radius18),
-                            border: Border.all(color: AppTheme.divider),
+                            borderRadius: BorderRadius.circular(
+                                AppTheme.radius18),
+                            border: Border.all(
+                                color: AppTheme.divider),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               value: _selectedGender,
                               isExpanded: true,
-                              hint: const Text('Select Gender'),
+                              hint: Text(
+                                'Select Gender',
+                                style: AppTheme.inputHint(),
+                              ),
+                              style: AppTheme.inputText(),
+                              icon: const Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                color: AppTheme.forest,
+                              ),
                               items: _genders.map((g) {
-                                return DropdownMenuItem(value: g, child: Text(g));
+                                return DropdownMenuItem(
+                                    value: g, child: Text(g));
                               }).toList(),
                               onChanged: (val) {
                                 setState(() => _selectedGender = val);
+                                if (val != null) {
+                                  AppSettingsScope.of(context).autoSyncWithGender(val);
+                                }
                               },
                             ),
                           ),
@@ -496,32 +557,38 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Language',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.deepForest,
-                          ),
-                        ),
+                        _premiumLabel('Language'),
                         const SizedBox(height: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14),
                           decoration: BoxDecoration(
                             color: AppTheme.paper,
-                            borderRadius: BorderRadius.circular(AppTheme.radius18),
-                            border: Border.all(color: AppTheme.divider),
+                            borderRadius: BorderRadius.circular(
+                                AppTheme.radius18),
+                            border: Border.all(
+                                color: AppTheme.divider),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               value: _selectedLanguage,
                               isExpanded: true,
-                              hint: const Text('Select Language'),
+                              hint: Text(
+                                'Select Language',
+                                style: AppTheme.inputHint(),
+                              ),
+                              style: AppTheme.inputText(),
+                              icon: const Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                color: AppTheme.forest,
+                              ),
                               items: _languages.map((l) {
-                                return DropdownMenuItem(value: l, child: Text(l));
+                                return DropdownMenuItem(
+                                    value: l, child: Text(l));
                               }).toList(),
                               onChanged: (val) {
-                                setState(() => _selectedLanguage = val);
+                                setState(() =>
+                                    _selectedLanguage = val);
                               },
                             ),
                           ),
@@ -535,31 +602,35 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
               const SizedBox(height: 16),
 
               // Memory Health Condition
-              const Text(
-                'Memory / Health Condition',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.deepForest,
-                ),
-              ),
+              _premiumLabel('Memory / Health Condition'),
               const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
                   color: AppTheme.paper,
-                  borderRadius: BorderRadius.circular(AppTheme.radius18),
+                  borderRadius:
+                      BorderRadius.circular(AppTheme.radius18),
                   border: Border.all(color: AppTheme.divider),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     value: _selectedCondition,
                     isExpanded: true,
+                    style: AppTheme.inputText(),
+                    icon: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: AppTheme.forest,
+                    ),
                     items: _conditions.map((cond) {
-                      return DropdownMenuItem(value: cond, child: Text(cond));
+                      return DropdownMenuItem(
+                          value: cond, child: Text(cond));
                     }).toList(),
                     onChanged: (val) {
-                      if (val != null) setState(() => _selectedCondition = val);
+                      if (val != null) {
+                        setState(() =>
+                            _selectedCondition = val);
+                      }
                     },
                   ),
                 ),
@@ -568,29 +639,17 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
               const SizedBox(height: 16),
 
               // Emergency Contact Info
-              const Text(
-                'Primary Emergency Contact',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.deepForest,
-                ),
-              ),
+              _premiumLabel('Primary Emergency Contact'),
               const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
                     child: TextField(
                       controller: _emergencyNameController,
-                      decoration: InputDecoration(
-                        hintText: 'Contact Name (e.g. Meena)',
-                        prefixIcon: const Icon(Icons.person_outline, color: AppTheme.forest),
-                        filled: true,
-                        fillColor: AppTheme.paper,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppTheme.radius18),
-                          borderSide: const BorderSide(color: AppTheme.divider),
-                        ),
+                      style: AppTheme.inputText(),
+                      decoration: _premiumInput(
+                        hintText: 'Contact Name',
+                        icon: Icons.person_outline,
                       ),
                     ),
                   ),
@@ -598,15 +657,10 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                   Expanded(
                     child: TextField(
                       controller: _emergencyPhoneController,
-                      decoration: InputDecoration(
+                      style: AppTheme.inputText(),
+                      decoration: _premiumInput(
                         hintText: 'Emergency Phone',
-                        prefixIcon: const Icon(Icons.phone_in_talk_rounded, color: AppTheme.forest),
-                        filled: true,
-                        fillColor: AppTheme.paper,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppTheme.radius18),
-                          borderSide: const BorderSide(color: AppTheme.divider),
-                        ),
+                        icon: Icons.phone_in_talk_rounded,
                       ),
                     ),
                   ),
@@ -616,35 +670,74 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
               const SizedBox(height: 16),
 
               // Personal notes & interests
-              const Text(
-                'Caregiver Notes & Interests (Optional)',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.deepForest,
-                ),
-              ),
+              _premiumLabel('Caregiver Notes & Interests'),
               const SizedBox(height: 8),
               TextField(
                 controller: _notesController,
                 maxLines: 3,
+                style: AppTheme.inputText(),
                 decoration: InputDecoration(
-                  hintText: 'e.g. Likes talking about temple visits, classical songs, grandchildren, and evening tea.',
+                  hintText:
+                      'e.g. Likes talking about temple visits, classical songs, grandchildren, and evening tea.',
+                  hintStyle: AppTheme.inputHint(),
                   filled: true,
                   fillColor: AppTheme.paper,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.radius18),
-                    borderSide: const BorderSide(color: AppTheme.divider),
+                    borderRadius: BorderRadius.circular(
+                        AppTheme.radius18),
+                    borderSide: BorderSide(
+                        color: AppTheme.divider),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                        AppTheme.radius18),
+                    borderSide: BorderSide(
+                        color: AppTheme.divider),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                        AppTheme.radius18),
+                    borderSide: const BorderSide(
+                        color: AppTheme.forest, width: 1.8),
                   ),
                 ),
               ),
 
               const SizedBox(height: 28),
 
-              ElevatedButton.icon(
-                onPressed: _submitRegistration,
-                icon: const Icon(Icons.save_rounded),
-                label: const Text('Complete Registration & Generate Code'),
+              AnimatedScaleButton(
+                onTap: _submitRegistration,
+                child: Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.emeraldGradient,
+                    borderRadius:
+                        BorderRadius.circular(AppTheme.radius18),
+                    boxShadow: AppTheme.buttonGlow,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.save_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            'Complete Registration & Generate Code',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTheme.buttonText(fontSize: 15),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
             ],

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 
 import '../services/memory_service.dart';
 import '../services/saathi_ai_engine.dart';
 import '../services/speech_service.dart';
+import '../services/voice_engine.dart';
+import '../state/app_settings.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_scale_button.dart';
 import '../widgets/offline_badge.dart';
@@ -17,7 +18,6 @@ class MemoriesScreen extends StatefulWidget {
 
 class _MemoriesScreenState extends State<MemoriesScreen> {
   final MemoryService _memoryService = MemoryService();
-  final FlutterTts _tts = FlutterTts();
   final SpeechService _speech = SpeechService();
 
   String _selectedCategory = 'All';
@@ -36,22 +36,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> {
   @override
   void initState() {
     super.initState();
-    _initTts();
     _memoryService.addListener(_onMemoriesChanged);
-  }
-
-  void _initTts() {
-    try {
-      _tts.setLanguage('en-IN');
-      _tts.setSpeechRate(0.48);
-      _tts.setPitch(1.0);
-      _tts.setStartHandler(() {
-        if (mounted) setState(() => _isSpeakingStory = true);
-      });
-      _tts.setCompletionHandler(() {
-        if (mounted) setState(() => _isSpeakingStory = false);
-      });
-    } catch (_) {}
   }
 
   void _onMemoriesChanged() {
@@ -61,15 +46,23 @@ class _MemoriesScreenState extends State<MemoriesScreen> {
   @override
   void dispose() {
     _memoryService.removeListener(_onMemoriesChanged);
-    _tts.stop();
+    VoiceEngine().stop();
     super.dispose();
   }
 
   Future<void> _speak(String text) async {
     try {
-      await _tts.stop();
+      final settings = AppSettingsScope.of(context);
       setState(() => _isSpeakingStory = true);
-      await _tts.speak(text);
+      await VoiceEngine().speak(
+        text,
+        language: settings.language,
+        rate: settings.voiceRate,
+        pitch: settings.voicePitch,
+        onDone: () {
+          if (mounted) setState(() => _isSpeakingStory = false);
+        },
+      );
     } catch (_) {
       if (mounted) setState(() => _isSpeakingStory = false);
     }
@@ -101,7 +94,6 @@ class _MemoriesScreenState extends State<MemoriesScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => _MemoryRecallModal(
         memory: _activeQuizMemory ?? memory,
-        tts: _tts,
         speech: _speech,
         memoryService: _memoryService,
       ),
@@ -906,13 +898,11 @@ class _MemoriesScreenState extends State<MemoriesScreen> {
 
 class _MemoryRecallModal extends StatefulWidget {
   final MemoryItem memory;
-  final FlutterTts tts;
   final SpeechService speech;
   final MemoryService memoryService;
 
   const _MemoryRecallModal({
     required this.memory,
-    required this.tts,
     required this.speech,
     required this.memoryService,
   });
@@ -930,17 +920,34 @@ class _MemoryRecallModalState extends State<_MemoryRecallModal> {
   @override
   void initState() {
     super.initState();
-    _speakQuestion();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _speakQuestion();
+    });
+  }
+
+  @override
+  void dispose() {
+    VoiceEngine().stop();
+    widget.speech.stopListening();
+    super.dispose();
   }
 
   void _speakQuestion() async {
+    final settings = AppSettingsScope.of(context);
     final text = "Amma, look at this memory of ${widget.memory.title}. ${widget.memory.recallQuestion}";
-    await widget.tts.speak(text);
+    await VoiceEngine().speak(
+      text,
+      language: settings.language,
+      rate: settings.voiceRate,
+      pitch: settings.voicePitch,
+    );
   }
 
   void _toggleListening() async {
+    final settings = AppSettingsScope.of(context);
     if (_isListening) {
       await widget.speech.stopListening();
+      if (!mounted) return;
       setState(() => _isListening = false);
       if (_userAnswer.isNotEmpty) {
         _evaluateAnswer(_userAnswer);
@@ -948,6 +955,8 @@ class _MemoryRecallModalState extends State<_MemoryRecallModal> {
       return;
     }
 
+    await VoiceEngine().stop();
+    if (!mounted) return;
     setState(() {
       _isListening = true;
       _userAnswer = '';
@@ -955,6 +964,7 @@ class _MemoryRecallModalState extends State<_MemoryRecallModal> {
     });
 
     await widget.speech.startListening(
+      language: settings.language,
       onResult: (text, isFinal) {
         if (!mounted) return;
         setState(() => _userAnswer = text);
@@ -966,6 +976,7 @@ class _MemoryRecallModalState extends State<_MemoryRecallModal> {
   }
 
   void _evaluateAnswer(String answer) async {
+    final settings = AppSettingsScope.of(context);
     await widget.speech.stopListening();
     final correct = widget.memoryService.evaluateAnswer(widget.memory, answer);
 
@@ -983,7 +994,12 @@ class _MemoryRecallModalState extends State<_MemoryRecallModal> {
       _feedback = fb;
     });
 
-    await widget.tts.speak(fb);
+    await VoiceEngine().speak(
+      fb,
+      language: settings.language,
+      rate: settings.voiceRate,
+      pitch: settings.voicePitch,
+    );
   }
 
   @override

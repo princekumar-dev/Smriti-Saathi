@@ -1,4 +1,5 @@
 import '../data/sample_data.dart';
+import 'local_ai_service.dart';
 import 'memory_service.dart';
 
 /// Comprehensive AI Conversation & Question-Answering Engine for Smirithi Saathi
@@ -11,12 +12,15 @@ class SaathiAiEngine {
   /// Generate a contextual, comforting, and direct answer for any user question or command
   static Future<SaathiResponse> generateResponse({
     required String query,
-    String userName = 'Amma',
+    String userName = '',
+    String language = 'English',
   }) async {
     final cleanQuery = query.trim();
+    final name = userName.trim().isNotEmpty ? userName.trim() : 'my friend';
+    userName = name;
     if (cleanQuery.isEmpty) {
       return SaathiResponse(
-        text: "Namaste $userName! I am listening. Please ask me anything—your schedule, family, memories, or tell me how you feel.",
+        text: "Namaste, $userName... I am listening with love. Please take your time, and tell me whatever is in your heart.",
         topic: 'greeting',
       );
     }
@@ -32,13 +36,13 @@ class SaathiAiEngine {
 
       if (isCorrect) {
         return SaathiResponse(
-          text: "Wonderful memory, $userName! That is absolutely right: ${active.recallAnswer}. ${active.reminiscenceStory}",
+          text: "Such a wonderful memory, $userName... That is exactly right: ${active.recallAnswer}. ${active.reminiscenceStory}",
           topic: 'memory_recall_success',
           suggestedAction: 'memories',
         );
       } else {
         return SaathiResponse(
-          text: "That was a good attempt, $userName! For this memory, the answer is ${active.recallAnswer}. ${active.reminiscenceStory}",
+          text: "That was such a sweet try, $userName... For this memory, it was ${active.recallAnswer}. ${active.reminiscenceStory}",
           topic: 'memory_recall_hint',
           suggestedAction: 'memories',
         );
@@ -56,7 +60,7 @@ class SaathiAiEngine {
       if (recallMem != null) {
         _activeRecallMemory = recallMem;
         return SaathiResponse(
-          text: "Let us do a fun memory recall! In the memory \"${recallMem.title}\", ${recallMem.recallQuestion}",
+          text: "Let's gently reminisce together, $userName... In your memory \"${recallMem.title}\", ${recallMem.recallQuestion}",
           topic: 'memory_quiz',
           suggestedAction: 'memories',
         );
@@ -71,7 +75,7 @@ class SaathiAiEngine {
       final period = now.hour >= 12 ? 'PM' : 'AM';
       final timeStr = "$hour:$minute $period";
       return SaathiResponse(
-        text: "Right now the time is $timeStr.",
+        text: "Right now it is $timeStr, $userName... A calm and peaceful time.",
         topic: 'time',
       );
     }
@@ -84,12 +88,44 @@ class SaathiAiEngine {
       final monthName = months[now.month - 1];
       final dateStr = "$dayName, $monthName ${now.day}, ${now.year}";
       return SaathiResponse(
-        text: "Today is $dateStr.",
+        text: "Today is $dateStr, $userName. I hope your day is gentle and peaceful.",
         topic: 'date',
       );
     }
 
-    // 3. GREETINGS & WELL-BEING
+    // 3. FULL RAG & TUNED QWEN 2.5 ENGINE INVOCATION
+    // Ground family, medicine, safe-zone, memories, and NER conversation in retrieved real facts
+    try {
+      final aiReply = await LocalAiService.instance.generateReply(
+        query: cleanQuery,
+        language: language,
+        userName: userName,
+      );
+      if (aiReply.trim().isNotEmpty) {
+        String? action;
+        String topic = 'ai_conversation';
+        if (lower.contains('medicine') || lower.contains('pill') || lower.contains('dose') || lower.contains('routine') || lower.contains('schedule')) {
+          action = 'routine';
+          topic = 'routine';
+        } else if (lower.contains('family') || lower.contains('daughter') || lower.contains('son') || lower.contains('call') || lower.contains('who is') || lower.contains('who are')) {
+          action = 'family';
+          topic = 'family';
+        } else if (lower.contains('memory') || lower.contains('photo') || lower.contains('trip') || lower.contains('story') || lower.contains('remember')) {
+          action = 'memories';
+          topic = 'memory';
+        } else if (lower.contains('song') || lower.contains('music') || lower.contains('game') || lower.contains('activity')) {
+          action = 'activities';
+          topic = 'activities';
+        }
+        return SaathiResponse(
+          text: aiReply,
+          topic: topic,
+          suggestedAction: action,
+        );
+      }
+    } catch (_) {}
+
+    // 4. GREETINGS & WELL-BEING (OFFLINE HEURISTIC FALLBACK)
     if (lower.startsWith('hi') ||
         lower.startsWith('hello') ||
         lower.startsWith('namaste') ||
@@ -107,7 +143,7 @@ class SaathiAiEngine {
         greeting = 'Good evening';
       }
       return SaathiResponse(
-        text: "$greeting, $userName! It is wonderful to talk with you. How are you feeling right now?",
+        text: "$greeting, $userName... It is so lovely to be with you. How are you feeling right now? Take your time, I am listening.",
         topic: 'greeting',
       );
     }
@@ -115,12 +151,12 @@ class SaathiAiEngine {
     if (lower.contains('how are you') || lower.contains('who are you') || lower.contains('what is your name')) {
       if (lower.contains('who are you') || lower.contains('your name')) {
         return SaathiResponse(
-          text: "I am Saathi, your personal voice companion! I am always here to talk with you, help you remember routines, share family memories, and keep you company.",
+          text: "I am Saathi, your caring companion and friend, $userName. I am always right here by your side to listen, share memories, and keep you company.",
           topic: 'identity',
         );
       }
       return SaathiResponse(
-        text: "I am doing wonderfully, thank you for asking $userName! Being here with you brings me great joy. How is your day going?",
+        text: "I am feeling so peaceful being here with you, $userName... Thank you for asking. How has your day been feeling?",
         topic: 'smalltalk',
       );
     }
@@ -128,28 +164,28 @@ class SaathiAiEngine {
     // 4. EMOTIONAL & HEALTH EXPRESSIONS
     if (lower.contains('happy') || lower.contains('feeling good') || lower.contains('great') || lower.contains('peaceful') || lower.contains('wonderful')) {
       return SaathiResponse(
-        text: "Hearing that fills my heart with joy! A peaceful and happy mind brings great health. Let us cherish this lovely moment.",
+        text: "Hearing that brings such warmth to my heart, $userName... A peaceful mind and cheerful heart are the greatest blessings.",
         topic: 'health',
       );
     }
 
     if (lower.contains('tired') || lower.contains('sleepy') || lower.contains('exhausted') || lower.contains('rest')) {
       return SaathiResponse(
-        text: "Please take some restful time, $userName. Sit comfortably, drink a sip of warm water, and close your eyes for a short while. I am right here with you.",
+        text: "Please rest comfortably, $userName... Sit back gently, take a sip of warm water, and close your eyes. I am right here keeping you company.",
         topic: 'health',
       );
     }
 
     if (lower.contains('headache') || lower.contains('pain') || lower.contains('dizzy') || lower.contains('not feeling well') || lower.contains('sick') || lower.contains('hurt') || lower.contains('fever')) {
       return SaathiResponse(
-        text: "I am sorry to hear you are uncomfortable, $userName. Please sit down comfortably and take slow, deep breaths. I will note this for your caretaker, and make sure you drink warm water.",
+        text: "I am so sorry you are uncomfortable, $userName... Please sit back, take a slow, gentle breath. I will make a note for your caregiver, and please drink a warm sip of water.",
         topic: 'health_alert',
       );
     }
 
     if (lower.contains('lonely') || lower.contains('sad') || lower.contains('bored') || lower.contains('alone')) {
       return SaathiResponse(
-        text: "You are never alone, $userName. I am always by your side. Would you like to hear an old story, listen to some soothing music, or look at family photographs together?",
+        text: "You are never alone, $userName... I am right here beside you. You are loved, and you are safe. Would you like to hear an old story, listen to soft music, or just sit quietly together?",
         topic: 'comfort',
         suggestedAction: 'memories',
       );
@@ -294,7 +330,23 @@ class SaathiAiEngine {
       );
     }
 
-    // 10. DIRECT GENERAL CONVERSATIONAL ANSWER
+    // 10. LOCAL AI COMPANION (QWEN 2.5 / MULTILINGUAL ADAPTIVE ENGINE)
+    try {
+      final aiReply = await LocalAiService.instance.generateReply(
+        query: cleanQuery,
+        language: language,
+        userName: userName,
+      );
+      if (aiReply.isNotEmpty) {
+        return SaathiResponse(
+          text: aiReply,
+          topic: 'ai_conversation',
+        );
+      }
+    } catch (_) {
+      // Fallback to offline rule-based conversational answer
+    }
+
     final directAnswer = _generateConversationalAnswer(cleanQuery, userName);
     return SaathiResponse(
       text: directAnswer,
@@ -303,18 +355,21 @@ class SaathiAiEngine {
   }
 
   static String _generateConversationalAnswer(String query, String userName) {
+    final lower = query.toLowerCase();
     if (query.endsWith('?') ||
-        query.toLowerCase().startsWith('what') ||
-        query.toLowerCase().startsWith('why') ||
-        query.toLowerCase().startsWith('where') ||
-        query.toLowerCase().startsWith('how') ||
-        query.toLowerCase().startsWith('when') ||
-        query.toLowerCase().startsWith('who') ||
-        query.toLowerCase().startsWith('can you')) {
-      return "That is a wonderful question, $userName! Regarding \"$query\"—I am right here with you and always learning. Let me make sure you feel supported, and we can also check with your family or caretaker if you need specific details!";
+        lower.startsWith('what') ||
+        lower.startsWith('why') ||
+        lower.startsWith('where') ||
+        lower.startsWith('how') ||
+        lower.startsWith('when') ||
+        lower.startsWith('who') ||
+        lower.startsWith('can you') ||
+        lower.startsWith('could you') ||
+        lower.startsWith('tell me')) {
+      return "That is such a thoughtful question, $userName... I am listening and reflecting with you. While I keep learning every day, please know I am always right by your side. We can also check with your family or caregiver whenever you need special assistance.";
     }
 
-    return "I heard you say \"$query\", $userName. Thank you for speaking with me. I am always listening and here to keep you company anytime you need.";
+    return "I hear you, $userName... Thank you for sharing your thoughts with me. It brings me such comfort to sit and talk with you. Please take your time, and tell me whatever is in your heart.";
   }
 }
 

@@ -4,6 +4,8 @@ import '../state/app_settings.dart';
 import '../state/auth_session.dart';
 import '../state/auth_state.dart';
 import '../theme/app_theme.dart';
+import '../services/voice_engine.dart';
+import '../widgets/language_selection_modal.dart';
 import '../widgets/screen_header.dart';
 import 'onboarding_screen.dart';
 
@@ -62,6 +64,52 @@ class SettingsScreen extends StatelessWidget {
                         subtitle: settings.language,
                         onTap: () => _chooseLanguage(context, settings),
                       ),
+                    ],
+                  ),
+                ),
+                SliverToBoxAdapter(child: _sectionTitle(context, 'Voice & Speech Engine')),
+                SliverToBoxAdapter(
+                  child: _settingsContainer(
+                    children: [
+                      _buildVoicePersonaTile(context, settings),
+                      _divider(),
+                      _sliderTile(
+                        icon: Icons.speed_rounded,
+                        title: 'Voice Pace (Speed)',
+                        subtitle: settings.voiceRate < 0.90
+                            ? 'Very calm & patient'
+                            : (settings.voiceRate <= 1.05
+                                ? 'Calm & natural (Elder-tuned)'
+                                : 'Slightly brisk'),
+                        value: settings.voiceRate,
+                        min: 0.75,
+                        max: 1.25,
+                        divisions: 10,
+                        label: '${(settings.voiceRate * 100).toInt()}%',
+                        onChanged: (val) {
+                          settings.setVoiceRate(val);
+                        },
+                      ),
+                      _divider(),
+                      _sliderTile(
+                        icon: Icons.graphic_eq_rounded,
+                        title: 'Voice Tone & Warmth',
+                        subtitle: settings.voicePitch < 0.98
+                            ? 'Deeper, grounding tone'
+                            : (settings.voicePitch <= 1.03
+                                ? 'Natural warm tone'
+                                : 'Lighter, clearer pitch'),
+                        value: settings.voicePitch,
+                        min: 0.90,
+                        max: 1.10,
+                        divisions: 8,
+                        label: '${(settings.voicePitch * 100).toInt()}%',
+                        onChanged: (val) {
+                          settings.setVoicePitch(val);
+                        },
+                      ),
+                      _divider(),
+                      _buildTestVoiceTile(context, settings),
                     ],
                   ),
                 ),
@@ -276,10 +324,94 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  Widget _sliderTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required double value,
+    required double min,
+    required double max,
+    required int divisions,
+    required String label,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _settingIcon(icon),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.muted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.sage.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.forest,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          SliderTheme(
+            data: SliderThemeData(
+              activeTrackColor: AppTheme.forest,
+              inactiveTrackColor: AppTheme.forest.withValues(alpha: 0.18),
+              thumbColor: AppTheme.forest,
+              overlayColor: AppTheme.forest.withValues(alpha: 0.12),
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+              trackHeight: 6,
+            ),
+            child: Slider(
+              value: value,
+              min: min,
+              max: max,
+              divisions: divisions,
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _actionTile({
     required IconData icon,
     required String title,
     String? subtitle,
+    IconData trailingIcon = Icons.chevron_right_rounded,
     required VoidCallback onTap,
   }) {
     return InkWell(
@@ -315,10 +447,10 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              size: 30,
-              color: AppTheme.muted,
+            Icon(
+              trailingIcon,
+              size: 28,
+              color: AppTheme.forest,
             ),
           ],
         ),
@@ -342,24 +474,273 @@ class SettingsScreen extends StatelessWidget {
     return const Divider(height: 1, indent: 76, endIndent: 16);
   }
 
-  void _chooseLanguage(BuildContext context, AppSettings settings) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 30),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+  Widget _buildVoicePersonaTile(BuildContext context, AppSettings settings) {
+    final isFemale = settings.voicePersona == 'female';
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Text(
-                'Choose language',
-                style: Theme.of(context).textTheme.headlineSmall,
+              _settingIcon(Icons.face_retouching_natural_rounded),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Voice Tone & Gender',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isFemale
+                          ? 'Soothing Female Voice (Warm, caring tone)'
+                          : 'Soothing Male Voice (Calm, grounding tone)',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.muted,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 16),
-              _languageOption(context, settings, 'English'),
-              _languageOption(context, settings, 'தமிழ்'),
-              _languageOption(context, settings, 'తెలుగు'),
-              _languageOption(context, settings, 'हिन्दी'),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: () async {
+                    await settings.setVoicePersona('female');
+                    final sample = settings.language.toLowerCase().contains('tamil')
+                        ? "வணக்கம், நான் உங்கள் தோழி. நான் உங்களுடன் இருக்கிறேன்."
+                        : settings.language.toLowerCase().contains('hindi')
+                            ? "नमस्ते, मैं आपकी सखी हूँ। मैं आपके साथ हूँ।"
+                            : "Hello, I am your soothing companion. I am right here with you.";
+                    VoiceEngine().speak(sample, language: settings.language);
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: isFemale ? AppTheme.forest : AppTheme.cream,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isFemale ? AppTheme.forest : AppTheme.divider,
+                        width: isFemale ? 2 : 1.5,
+                      ),
+                      boxShadow: isFemale
+                          ? [
+                              BoxShadow(
+                                color: AppTheme.forest.withValues(alpha: 0.25),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              )
+                            ]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          '🌸',
+                          style: TextStyle(fontSize: 18),
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            'Soothing Female',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w800,
+                              color: isFemale ? Colors.white : AppTheme.ink,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: InkWell(
+                  onTap: () async {
+                    await settings.setVoicePersona('male');
+                    final sample = settings.language.toLowerCase().contains('tamil')
+                        ? "வணக்கம், நான் உங்கள் தோழன். நான் எப்போதும் உங்கள் பக்கம் இருக்கிறேன்."
+                        : settings.language.toLowerCase().contains('hindi')
+                            ? "नमस्ते, मैं आपका साथी हूँ। मैं सदा आपके साथ हूँ।"
+                            : "Hello, I am your gentle companion. I am right here with you.";
+                    VoiceEngine().speak(sample, language: settings.language);
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: !isFemale ? AppTheme.forest : AppTheme.cream,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: !isFemale ? AppTheme.forest : AppTheme.divider,
+                        width: !isFemale ? 2 : 1.5,
+                      ),
+                      boxShadow: !isFemale
+                          ? [
+                              BoxShadow(
+                                color: AppTheme.forest.withValues(alpha: 0.25),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              )
+                            ]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          '🌿',
+                          style: TextStyle(fontSize: 18),
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            'Soothing Male',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w800,
+                              color: !isFemale ? Colors.white : AppTheme.ink,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTestVoiceTile(BuildContext context, AppSettings settings) {
+    return AnimatedBuilder(
+      animation: VoiceEngine(),
+      builder: (context, _) {
+        final engine = VoiceEngine();
+        final isSpeaking = engine.isSpeaking;
+        final voiceName = engine.activeVoiceName;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _settingIcon(
+                    isSpeaking ? Icons.volume_up_rounded : Icons.record_voice_over_rounded,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Active Voice Engine',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Model: $voiceName (${settings.language})',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.forest,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              InkWell(
+                onTap: () {
+                  if (isSpeaking) {
+                    engine.stop();
+                  } else {
+                    engine.testVoice(
+                      language: settings.language,
+                      rate: settings.voiceRate,
+                      pitch: settings.voicePitch,
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Playing warm sample in ${settings.language}...'),
+                        duration: const Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    );
+                  }
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: isSpeaking ? AppTheme.coral : AppTheme.forest,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isSpeaking ? AppTheme.coral : AppTheme.forest)
+                            .withValues(alpha: 0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        isSpeaking ? Icons.stop_circle_rounded : Icons.play_circle_fill_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        isSpeaking ? 'Stop Voice Sample' : 'Test Saathi Voice',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         );
@@ -367,37 +748,7 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _languageOption(
-    BuildContext context,
-    AppSettings settings,
-    String language,
-  ) {
-    final selected = settings.language == language;
-    return InkWell(
-      onTap: () {
-        settings.setLanguage(language);
-        Navigator.pop(context);
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                language,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-              ),
-            ),
-            if (selected)
-              const Icon(
-                Icons.check_circle_rounded,
-                color: AppTheme.forest,
-                size: 28,
-              ),
-          ],
-        ),
-      ),
-    );
+  void _chooseLanguage(BuildContext context, AppSettings settings) {
+    LanguageSelectionModal.show(context);
   }
 }

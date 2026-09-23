@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
+import '../data/app_translations.dart';
 import '../navigation/app_shell.dart';
 import '../services/memory_service.dart';
+import '../state/app_settings.dart';
 import '../state/auth_session.dart';
 import '../state/auth_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_scale_button.dart';
 import '../widgets/breathing_orb.dart';
+import '../widgets/language_selection_modal.dart';
 import '../widgets/offline_badge.dart';
 import '../widgets/section_title.dart';
 import '../widgets/voice_checkin_dialog.dart';
@@ -26,18 +29,11 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _selectedMood = 'Peaceful';
 
-  final List<_MoodOption> _moods = const [
-    _MoodOption(label: 'Happy', icon: Icons.sentiment_very_satisfied_rounded, color: AppTheme.warmAmber),
-    _MoodOption(label: 'Peaceful', icon: Icons.spa_rounded, color: AppTheme.emerald),
-    _MoodOption(label: 'Thoughtful', icon: Icons.menu_book_rounded, color: AppTheme.coral),
-    _MoodOption(label: 'Resting', icon: Icons.bedtime_rounded, color: Color(0xFF7A68A6)),
-  ];
-
-  String get _greeting {
+  String _getGreeting(HomeTranslation home) {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 12) return home.greetingMorning;
+    if (hour < 17) return home.greetingAfternoon;
+    return home.greetingEvening;
   }
 
   String _getUserName(BuildContext context) {
@@ -46,16 +42,22 @@ class _HomeScreenState extends State<HomeScreen> {
       if (auth.activePatient != null && auth.activePatient!.nickname.isNotEmpty) {
         return auth.activePatient!.nickname;
       }
-      if (auth.activePatient != null) return auth.activePatient!.name;
+      if (auth.activePatient != null && auth.activePatient!.name.isNotEmpty) {
+        return auth.activePatient!.name;
+      }
     } catch (_) {}
 
     try {
       final legacy = AuthSessionScope.of(context);
-      if (legacy.activePatient != null) return legacy.activePatient!.name;
-      return legacy.displayName;
+      if (legacy.activePatient != null && legacy.activePatient!.name.isNotEmpty) {
+        return legacy.activePatient!.name;
+      }
+      if (legacy.displayName.isNotEmpty) {
+        return legacy.displayName;
+      }
     } catch (_) {}
 
-    return 'Amma';
+    return '';
   }
 
   void _confirmLogout(BuildContext context) {
@@ -111,6 +113,16 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final userName = _getUserName(context);
+    final settings = AppSettingsScope.of(context);
+    final home = AppTranslations.getHome(settings.language);
+    final currentLang = AppTranslations.getLanguageInfo(settings.language);
+
+    final moods = [
+      (label: home.happy, icon: Icons.sentiment_very_satisfied_rounded, color: AppTheme.warmAmber),
+      (label: home.peaceful, icon: Icons.spa_rounded, color: AppTheme.emerald),
+      (label: home.thoughtful, icon: Icons.menu_book_rounded, color: AppTheme.coral),
+      (label: home.resting, icon: Icons.bedtime_rounded, color: const Color(0xFF7A68A6)),
+    ];
 
     return Scaffold(
       backgroundColor: AppTheme.cream,
@@ -146,27 +158,61 @@ class _HomeScreenState extends State<HomeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '$_greeting, $userName',
+                            userName.isNotEmpty
+                                ? '${_getGreeting(home)}, $userName'
+                                : _getGreeting(home),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: AppTranslations.getFont(
+                              settings.language,
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
                               color: AppTheme.deepForest,
                             ),
                           ),
                           const SizedBox(height: 2),
-                          const Text(
-                            'Smriti Saathi is ready',
+                          Text(
+                            home.saathiReady,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: AppTranslations.getFont(
+                              settings.language,
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
                               color: AppTheme.muted,
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    // Language Switcher Button
+                    AnimatedScaleButton(
+                      onTap: () => LanguageSelectionModal.show(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppTheme.paper,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: AppTheme.softShadow,
+                          border: Border.all(color: AppTheme.forest.withValues(alpha: 0.2), width: 1.2),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(currentLang.flag, style: const TextStyle(fontSize: 14)),
+                            const SizedBox(width: 4),
+                            Text(
+                              currentLang.id,
+                              style: AppTranslations.getFont(
+                                settings.language,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w800,
+                                color: AppTheme.forest,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -231,9 +277,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'How are you feeling right now?',
-                      style: TextStyle(
+                    Text(
+                      home.feelingQuestion,
+                      style: AppTranslations.getFont(
+                        settings.language,
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
                         color: AppTheme.deepForest,
@@ -241,7 +288,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 12),
                     Row(
-                      children: _moods.map((m) {
+                      children: moods.map((m) {
                         final isSelected = _selectedMood == m.label;
                         return Expanded(
                           child: Padding(
@@ -251,42 +298,45 @@ class _HomeScreenState extends State<HomeScreen> {
                                 setState(() => _selectedMood = m.label);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text('Noted, feeling ${m.label}. Saathi is with you.'),
+                                    content: Text('${m.label}. ${home.saathiReady}.'),
                                     duration: const Duration(seconds: 2),
                                   ),
                                 );
                               },
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 240),
-                                curve: Curves.easeOutCubic,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
                                 decoration: BoxDecoration(
-                                  color: isSelected ? m.color : AppTheme.paper,
+                                  color: isSelected ? m.color.withValues(alpha: 0.15) : AppTheme.paper,
                                   borderRadius: BorderRadius.circular(AppTheme.radius18),
-                                  boxShadow: isSelected ? AppTheme.softShadow : [],
                                   border: Border.all(
                                     color: isSelected ? m.color : AppTheme.divider,
                                     width: isSelected ? 2.0 : 1.2,
                                   ),
+                                  boxShadow: isSelected
+                                      ? [
+                                          BoxShadow(
+                                            color: m.color.withValues(alpha: 0.2),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ]
+                                      : AppTheme.softShadow,
                                 ),
                                 child: Column(
                                   children: [
                                     Icon(
                                       m.icon,
-                                      size: 26,
-                                      color: isSelected ? Colors.white : m.color,
+                                      color: isSelected ? m.color : AppTheme.muted,
+                                      size: 28,
                                     ),
-                                    const SizedBox(height: 4),
-                                    FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Text(
-                                        m.label,
-                                        maxLines: 1,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w900,
-                                          color: isSelected ? Colors.white : AppTheme.deepForest,
-                                        ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      m.label,
+                                      style: AppTranslations.getFont(
+                                        settings.language,
+                                        fontSize: 12.5,
+                                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                        color: isSelected ? AppTheme.deepForest : AppTheme.muted,
                                       ),
                                     ),
                                   ],
@@ -438,7 +488,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         VoiceCheckinDialog.show(context, userName: userName);
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
                         decoration: BoxDecoration(
                           color: AppTheme.warmAmber,
                           borderRadius: BorderRadius.circular(AppTheme.radius18),
@@ -447,14 +497,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.mic_rounded, color: AppTheme.deepForest, size: 18),
-                            SizedBox(width: 6),
-                            Text(
-                              'Voice Check-In',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w900,
-                                color: AppTheme.deepForest,
+                            Icon(Icons.mic_rounded, color: AppTheme.deepForest, size: 16),
+                            SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                'Voice Check-In',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppTheme.deepForest,
+                                ),
                               ),
                             ),
                           ],
@@ -469,7 +523,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(AppTheme.radius18),
@@ -478,14 +532,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.chat_bubble_outline_rounded, color: AppTheme.forest, size: 18),
-                            SizedBox(width: 6),
-                            Text(
-                              'Chat Companion',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w900,
-                                color: AppTheme.deepForest,
+                            Icon(Icons.chat_bubble_outline_rounded, color: AppTheme.forest, size: 16),
+                            SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                'Chat Companion',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppTheme.deepForest,
+                                ),
                               ),
                             ),
                           ],
@@ -785,16 +843,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-}
-
-class _MoodOption {
-  final String label;
-  final IconData icon;
-  final Color color;
-
-  const _MoodOption({
-    required this.label,
-    required this.icon,
-    required this.color,
-  });
 }

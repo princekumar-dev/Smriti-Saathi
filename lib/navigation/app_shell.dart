@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../data/app_translations.dart';
 import '../screens/activities_screen.dart';
 import '../screens/family_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/memories_screen.dart';
 import '../screens/saathi_screen.dart';
 import '../screens/settings_screen.dart';
+import '../state/app_settings.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_scale_button.dart';
 
@@ -29,6 +31,9 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = AppSettingsScope.of(context);
+    final nav = AppTranslations.getNav(settings.language);
+
     return Scaffold(
       backgroundColor: AppTheme.cream,
       body: IndexedStack(
@@ -44,11 +49,20 @@ class _AppShellState extends State<AppShell> {
         foregroundColor: AppTheme.deepForest,
         elevation: 6,
         icon: const Icon(Icons.auto_awesome_rounded, size: 23),
-        label: const Text('Ask Saathi'),
+        label: Text(
+          nav.askSaathi,
+          style: AppTranslations.getFont(
+            settings.language,
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: _LuxuryElderlyNavBar(
         selectedIndex: _selectedIndex,
+        language: settings.language,
+        nav: nav,
         onSelect: (index) => setState(() => _selectedIndex = index),
       ),
     );
@@ -57,10 +71,14 @@ class _AppShellState extends State<AppShell> {
 
 class _LuxuryElderlyNavBar extends StatelessWidget {
   final int selectedIndex;
+  final String language;
+  final ShellTranslation nav;
   final ValueChanged<int> onSelect;
 
   const _LuxuryElderlyNavBar({
     required this.selectedIndex,
+    required this.language,
+    required this.nav,
     required this.onSelect,
   });
 
@@ -87,11 +105,11 @@ class _LuxuryElderlyNavBar extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Row(
             children: [
-              _navItem(0, Icons.home_outlined, Icons.home_rounded, 'Home'),
-              _navItem(1, Icons.mic_none_rounded, Icons.mic_rounded, 'Voice Saathi'),
-              _navItem(2, Icons.photo_album_outlined, Icons.photo_album_rounded, 'Memories'),
-              _navItem(3, Icons.extension_outlined, Icons.extension_rounded, 'Activities'),
-              _navItem(4, Icons.people_outline_rounded, Icons.people_rounded, 'Family'),
+              _navItem(0, Icons.home_outlined, Icons.home_rounded, nav.home),
+              _navItem(1, Icons.mic_none_rounded, Icons.mic_rounded, nav.voiceSaathi),
+              _navItem(2, Icons.photo_album_outlined, Icons.photo_album_rounded, nav.memories),
+              _navItem(3, Icons.extension_outlined, Icons.extension_rounded, nav.activities),
+              _navItem(4, Icons.people_outline_rounded, Icons.people_rounded, nav.family),
             ],
           ),
         ),
@@ -139,8 +157,9 @@ class _LuxuryElderlyNavBar extends StatelessWidget {
                 child: Text(
                   label,
                   maxLines: 1,
-                  style: TextStyle(
-                    fontSize: 12.5,
+                  style: AppTranslations.getFont(
+                    language,
+                    fontSize: 12,
                     fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
                     color: selected ? AppTheme.deepForest : AppTheme.muted,
                     letterSpacing: selected ? 0.2 : 0,

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 
 import '../screens/activities_screen.dart';
 import '../screens/family_screen.dart';
@@ -8,6 +7,8 @@ import '../screens/memories_screen.dart';
 import '../screens/routine_screen.dart';
 import '../services/saathi_ai_engine.dart';
 import '../services/speech_service.dart';
+import '../services/voice_engine.dart';
+import '../state/app_settings.dart';
 import '../theme/app_theme.dart';
 import 'animated_scale_button.dart';
 
@@ -36,7 +37,6 @@ class VoiceCheckinDialog extends StatefulWidget {
 
 class _VoiceCheckinDialogState extends State<VoiceCheckinDialog>
     with SingleTickerProviderStateMixin {
-  FlutterTts? _tts;
   final SpeechService _speech = SpeechService();
   late AnimationController _animController;
 
@@ -53,7 +53,6 @@ class _VoiceCheckinDialogState extends State<VoiceCheckinDialog>
   void initState() {
     super.initState();
     _initSteps();
-    _initTtsSafe();
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1600),
@@ -62,6 +61,10 @@ class _VoiceCheckinDialogState extends State<VoiceCheckinDialog>
     if (_steps.isNotEmpty) {
       _currentQuestion = _steps[0].question;
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _askCurrentQuestion();
+    });
   }
 
   void _initSteps() {
@@ -100,57 +103,34 @@ class _VoiceCheckinDialogState extends State<VoiceCheckinDialog>
     ]);
   }
 
-  void _initTtsSafe() {
-    try {
-      _tts = FlutterTts();
-      _tts?.setLanguage('en-IN');
-      _tts?.setPitch(1.0);
-      _tts?.setSpeechRate(0.48);
-
-      _tts?.setStartHandler(() {
-        if (mounted) setState(() => _isSpeaking = true);
-      });
-
-      _tts?.setCompletionHandler(() {
-        if (mounted) {
-          setState(() {
-            _isSpeaking = false;
-          });
-          _startSpeechListening();
-        }
-      });
-
-      _tts?.setErrorHandler((dynamic _) {
-        if (mounted) {
-          setState(() {
-            _isSpeaking = false;
-          });
-        }
-      });
-    } catch (_) {
-      _tts = null;
-    }
-  }
-
   @override
   void dispose() {
-    try {
-      _tts?.stop();
-      _speech.stopListening();
-    } catch (_) {}
+    VoiceEngine().stop();
+    _speech.stopListening();
     _animController.dispose();
     super.dispose();
   }
 
-  Future<void> _speak(String text) async {
-    if (_tts == null) return;
+  Future<void> _speak(String text, {VoidCallback? onDone}) async {
+    final settings = AppSettingsScope.of(context);
     await _speech.stopListening();
     setState(() {
       _isSpeaking = true;
       _isListening = false;
     });
     try {
-      await _tts?.speak(text);
+      await VoiceEngine().speak(
+        text,
+        language: settings.language,
+        rate: settings.voiceRate,
+        pitch: settings.voicePitch,
+        onDone: () {
+          if (mounted) {
+            setState(() => _isSpeaking = false);
+            onDone?.call();
+          }
+        },
+      );
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -168,7 +148,11 @@ class _VoiceCheckinDialogState extends State<VoiceCheckinDialog>
         _assistantReply = '';
         _spokenText = '';
       });
-      _speak(step.audioText);
+      _speak(step.audioText, onDone: () {
+        if (mounted) {
+          _startSpeechListening();
+        }
+      });
     }
   }
 
@@ -180,7 +164,9 @@ class _VoiceCheckinDialogState extends State<VoiceCheckinDialog>
       _spokenText = 'Listening...';
     });
 
+    final settings = AppSettingsScope.of(context);
     final started = await _speech.startListening(
+      language: settings.language,
       onResult: (text, isFinal) {
         if (!mounted) return;
         setState(() {

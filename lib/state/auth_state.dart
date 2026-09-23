@@ -137,6 +137,19 @@ class AuthState extends ChangeNotifier {
   static const String _kPatientsListKey = 'smirithi_registered_patients';
   static const String _kOnboardingKey = 'smirithi_onboarding_completed';
 
+  static bool _isDemoPatient(PatientProfile p) {
+    final id = p.id.toLowerCase();
+    final code = p.pairingCode.toUpperCase();
+    final name = p.name.toLowerCase();
+    return id.contains('demo') ||
+        id == 'pt_demo_senior' ||
+        code == 'DEMO' ||
+        code == 'SAATHI-DEMO' ||
+        code.contains('DEMO') ||
+        name.contains('shanti devi') ||
+        name.contains('kamala raman');
+  }
+
   Future<void> _loadFromPrefs() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -150,18 +163,24 @@ class AuthState extends ChangeNotifier {
         _activeCaretaker = CaretakerProfile.fromJson(jsonDecode(caretakerJson));
       }
       if (patientJson != null) {
-        _activePatient = PatientProfile.fromJson(jsonDecode(patientJson));
+        final loaded = PatientProfile.fromJson(jsonDecode(patientJson));
+        if (!_isDemoPatient(loaded)) {
+          _activePatient = loaded;
+        } else {
+          _activePatient = null;
+        }
       }
       if (patientsListJson != null) {
         final List<dynamic> list = jsonDecode(patientsListJson);
         _registeredPatients = list
             .map((e) => PatientProfile.fromJson(e as Map<String, dynamic>))
+            .where((p) => !_isDemoPatient(p))
             .toList();
       }
 
       if (roleStr == 'caretaker') {
         _currentRole = UserRole.caretaker;
-      } else if (roleStr == 'patient') {
+      } else if (roleStr == 'patient' && _activePatient != null) {
         _currentRole = UserRole.patient;
       } else {
         _currentRole = UserRole.unauthenticated;
@@ -175,6 +194,7 @@ class AuthState extends ChangeNotifier {
       _currentRole = UserRole.unauthenticated;
     } finally {
       _isInitialized = true;
+      _saveToPrefs();
       notifyListeners();
     }
   }
@@ -184,7 +204,7 @@ class AuthState extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       if (_currentRole == UserRole.caretaker) {
         await prefs.setString(_kRoleKey, 'caretaker');
-      } else if (_currentRole == UserRole.patient) {
+      } else if (_currentRole == UserRole.patient && _activePatient != null) {
         await prefs.setString(_kRoleKey, 'patient');
       } else {
         await prefs.remove(_kRoleKey);
@@ -194,13 +214,18 @@ class AuthState extends ChangeNotifier {
         await prefs.setString(
             _kCaretakerKey, jsonEncode(_activeCaretaker!.toJson()));
       }
-      if (_activePatient != null) {
+      if (_activePatient != null && !_isDemoPatient(_activePatient!)) {
         await prefs.setString(
             _kPatientKey, jsonEncode(_activePatient!.toJson()));
+      } else {
+        await prefs.remove(_kPatientKey);
       }
       await prefs.setString(
         _kPatientsListKey,
-        jsonEncode(_registeredPatients.map((e) => e.toJson()).toList()),
+        jsonEncode(_registeredPatients
+            .where((p) => !_isDemoPatient(p))
+            .map((e) => e.toJson())
+            .toList()),
       );
     } catch (_) {}
   }
@@ -212,7 +237,10 @@ class AuthState extends ChangeNotifier {
         caretakerId: _activeCaretaker?.id,
       );
       if (list.isNotEmpty) {
-        final parsed = list.map((e) => PatientProfile.fromJson(e)).toList();
+        final parsed = list
+            .map((e) => PatientProfile.fromJson(e))
+            .where((p) => !_isDemoPatient(p))
+            .toList();
         _registeredPatients = parsed;
         if (_activePatient == null && _registeredPatients.isNotEmpty) {
           _activePatient = _registeredPatients.first;
@@ -420,32 +448,20 @@ class AuthState extends ChangeNotifier {
       return true;
     }
 
-    // 3. Built-in DEMO / GUEST fallback if offline
-    if (cleanCode == 'DEMO' || cleanCode == 'GUEST') {
-      const demoPatient = PatientProfile(
-        id: 'pt_demo_senior',
-        name: 'Shanti Devi',
-        nickname: 'Dadi',
-        age: 76,
-        gender: 'Female',
-        condition: 'Mild Cognitive Impairment (Early Stage)',
-        language: 'Hindi & English',
-        emergencyContact: 'Rajesh Kumar (Son)',
-        emergencyPhone: '+91 98450 12345',
-        pairingCode: 'SAATHI-DEMO',
-        notes: 'Enjoys classical music, morning garden strolls, and looking at family albums.',
-      );
-      _activePatient = demoPatient;
-      if (!_registeredPatients.any((p) => p.id == demoPatient.id)) {
-        _registeredPatients.insert(0, demoPatient);
-      }
-      _currentRole = UserRole.patient;
-      await _saveToPrefs();
-      notifyListeners();
-      return true;
-    }
-
     return false;
+  }
+
+  /// Purges any legacy demo patient profiles from active memory and storage
+  Future<void> clearDemoUsers() async {
+    _registeredPatients.removeWhere(_isDemoPatient);
+    if (_activePatient != null && _isDemoPatient(_activePatient!)) {
+      _activePatient = null;
+      if (_currentRole == UserRole.patient) {
+        _currentRole = UserRole.unauthenticated;
+      }
+    }
+    await _saveToPrefs();
+    notifyListeners();
   }
 
   Future<void> selectActivePatient(PatientProfile patient) async {

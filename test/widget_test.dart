@@ -8,22 +8,26 @@ void main() {
     GoogleFonts.config.allowRuntimeFetching = false;
   });
 
-  testWidgets('App loads onboarding screen', (WidgetTester tester) async {
+  testWidgets('App loads onboarding and shows language selection modal when not selected', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(const SmirithiSaathiApp());
-    await tester.pump(const Duration(milliseconds: 200));
-    expect(find.textContaining('Saathi'), findsWidgets);
+    // Pump through splash screen transition
+    for (int i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    // Language selection modal appears
+    expect(find.textContaining('Language'), findsWidgets);
   });
 
-  testWidgets('Logging out resets state and returns to OnboardingScreen', (WidgetTester tester) async {
+  testWidgets('App loads onboarding screen directly when language is already selected', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({
-      'user_role': 'patient',
-      'onboarding_completed': true,
+      'smirithi_has_selected_language': true,
+      'smirithi_language': 'English',
     });
     await tester.pumpWidget(const SmirithiSaathiApp());
-    await tester.pump(const Duration(milliseconds: 200));
-
-    // Initially in patient mode (AppShell)
+    for (int i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     expect(find.textContaining('Saathi'), findsWidgets);
   });
 }
