@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../data/sample_data.dart';
 import '../services/api_service.dart';
+import '../theme/app_motion.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_scale_button.dart';
+import '../widgets/fx/fade_slide_in.dart';
 
 class FamilyScreen extends StatefulWidget {
   const FamilyScreen({super.key});
@@ -213,7 +215,9 @@ class _FamilyScreenState extends State<FamilyScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Emergency SOS Card
-              Container(
+              FadeSlideIn(
+                delay: AppMotion.staggerDelay(0),
+                child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   gradient: AppTheme.coralGradient,
@@ -293,16 +297,20 @@ class _FamilyScreenState extends State<FamilyScreen> {
                   ],
                 ),
               ),
+              ),
 
               const SizedBox(height: 24),
 
-              const Text(
+              FadeSlideIn(
+                delay: AppMotion.staggerDelay(1),
+                child: const Text(
                 'Your Loved Ones',
                 style: TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.w900,
                   color: AppTheme.deepForest,
                 ),
+              ),
               ),
               const SizedBox(height: 12),
 

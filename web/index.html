@@ -7,7 +7,7 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" flt-viewport>
   <meta name="description" content="Smriti Saathi — Your AI Saathi for Everyday Life & Memories. An offline-first caring AI companion for elderly wellbeing.">
-  <meta name="theme-color" content="#184E77">
+  <meta name="theme-color" content="#1B4332">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -18,608 +18,885 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>Smriti Saathi — Your AI Saathi for Everyday Life & Memories</title>
+  <title>Smriti Saathi — Your AI Saathi for Everyday Life &amp; Memories</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- Bespoke Brand Typography -->
+  <!-- Preload Critical Brand Asset for Instant Splash Display -->
+  <link rel="preload" as="image" href="logo.png">
+
+  <!-- Bespoke Luxury Brand Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Comfortaa:wght@700&family=Noto+Color+Emoji&family=Noto+Sans:wght@400;600;700&family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Comfortaa:wght@600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
 
   <style>
-    /* Reset & Viewport */
-    *, *::before, *::after {
-      box-sizing: border-box;
-    }
+    *, *::before, *::after { box-sizing: border-box; }
 
     html, body {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
-      min-height: 100vh;
       min-height: 100dvh;
       min-height: -webkit-fill-available;
-      background-color: #F9F6F0;
-      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #F8F5EE;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       overflow: hidden;
       touch-action: manipulation;
     }
 
-    flutter-view {
-      width: 100%;
-      height: 100%;
-    }
+    flutter-view { width: 100%; height: 100%; }
 
-    /* Suppress & Disable Flutter's Default Dev Loading Bar (.flutter-loader) */
-    .flutter-loader,
-    .indeterminate,
-    [class*="flutter-loader"],
-    div.flutter-loader {
-      display: none !important;
-      visibility: hidden !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-      height: 0px !important;
-      max-height: 0px !important;
-      width: 0px !important;
-      max-width: 0px !important;
-      position: absolute !important;
-      top: -9999px !important;
-      left: -9999px !important;
-      overflow: hidden !important;
+    /* Hide Flutter's default dev loader */
+    .flutter-loader, .indeterminate,
+    [class*="flutter-loader"], div.flutter-loader {
+      display: none !important; visibility: hidden !important;
+      opacity: 0 !important; height: 0 !important; width: 0 !important;
+      position: absolute !important; top: -9999px !important; left: -9999px !important;
       z-index: -99999 !important;
     }
 
-    /* Ambient Background Orbs */
-    .ambient-orb {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(80px);
-      pointer-events: none;
-      z-index: 1;
-      opacity: 0.55;
-      animation: floatOrb 10s ease-in-out infinite alternate;
-    }
-
-    .orb-1 {
-      width: 340px;
-      height: 340px;
-      top: -80px;
-      left: -80px;
-      background: radial-gradient(circle, rgba(24, 78, 119, 0.28) 0%, rgba(212, 163, 115, 0.2) 65%, transparent 100%);
-    }
-
-    .orb-2 {
-      width: 380px;
-      height: 380px;
-      bottom: -100px;
-      right: -100px;
-      background: radial-gradient(circle, rgba(45, 106, 79, 0.3) 0%, rgba(82, 183, 136, 0.2) 65%, transparent 100%);
-      animation-delay: -5s;
-    }
-
-    /* Custom Web Splash & Loading Screen */
+    /* ── Splash Root ── */
     #app-splash-loader {
       position: fixed;
       inset: 0;
-      width: 100%;
-      height: 100%;
-      height: 100dvh;
       z-index: 999999;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at 50% 36%, #FFFFFF 0%, #FAF7F2 50%, #F3EEE5 100%);
-      transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      padding: 24px;
+      overflow: hidden;
       user-select: none;
       -webkit-user-select: none;
-      padding: 16px;
-      overflow-y: auto;
-      overflow-x: hidden;
+      background:
+        radial-gradient(130% 100% at 50% 0%, #FFFFFF 0%, #FBF8F1 38%, #EEF5EA 72%, #E2EDE0 100%);
+      transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1), transform 0.75s cubic-bezier(0.4, 0, 0.2, 1);
     }
-
     #app-splash-loader.fade-out {
       opacity: 0;
-      transform: scale(1.025);
+      transform: scale(1.04);
+      filter: blur(4px);
       pointer-events: none;
     }
 
-    .splash-card {
+    /* Canvas for rich falling leaves & stardust embers */
+    #nature-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    /* Soft organic ambient light-blooms */
+    .bloom {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(85px);
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.55;
+    }
+    .bloom-a {
+      width: 520px; height: 520px; top: -140px; left: -140px;
+      background: radial-gradient(circle, rgba(82, 183, 136, 0.45) 0%, rgba(45, 106, 79, 0.15) 55%, transparent 75%);
+      animation: driftA 18s ease-in-out infinite alternate;
+    }
+    .bloom-b {
+      width: 540px; height: 540px; bottom: -160px; right: -140px;
+      background: radial-gradient(circle, rgba(233, 196, 106, 0.4) 0%, rgba(212, 163, 115, 0.2) 55%, transparent 75%);
+      animation: driftB 22s ease-in-out infinite alternate;
+    }
+    .bloom-c {
+      width: 440px; height: 440px; top: 32%; left: 52%;
+      background: radial-gradient(circle, rgba(116, 198, 157, 0.3) 0%, rgba(45, 106, 79, 0.1) 60%, transparent 80%);
+      animation: driftC 26s ease-in-out infinite alternate;
+    }
+
+    /* Decorative luxury gold grid vignette */
+    .gold-vignette {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      background:
+        radial-gradient(circle at 50% 50%, transparent 60%, rgba(45, 106, 79, 0.04) 90%, rgba(27, 67, 50, 0.08) 100%);
+      box-shadow: inset 0 0 100px rgba(45, 106, 79, 0.06);
+    }
+
+    /* ── Center Stage ── */
+    .stage {
       position: relative;
       z-index: 10;
       width: min(92vw, 420px);
-      margin: auto;
-      background: rgba(255, 255, 255, 0.96);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1.5px solid rgba(24, 78, 119, 0.14);
-      border-radius: 34px;
-      padding: 38px 22px 28px;
-      text-align: center;
-      box-shadow: 
-        0 24px 60px -10px rgba(24, 78, 119, 0.16),
-        0 6px 20px rgba(0, 0, 0, 0.04),
-        0 0 0 1px rgba(255, 255, 255, 0.9) inset;
       display: flex;
       flex-direction: column;
       align-items: center;
+      text-align: center;
     }
 
-    /* Halo Glow & Logo */
-    .logo-halo {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, rgba(24, 78, 119, 0.16), rgba(82, 183, 136, 0.25), rgba(212, 163, 115, 0.22));
+    /* Central Sacred Logo Orb & Ripple Auras */
+    .logo-stage {
+      position: relative;
+      width: 170px;
+      height: 170px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 22px;
-      box-shadow: 
-        0 14px 34px -4px rgba(24, 78, 119, 0.2),
-        0 0 0 1px rgba(255, 255, 255, 0.8) inset;
-      animation: pulseGlow 3s ease-in-out infinite;
+      margin-bottom: 24px;
     }
 
-    .logo-badge {
-      width: 94px;
-      height: 94px;
+    /* Multi-layered expanding energy ripples */
+    .ring {
+      position: absolute;
+      inset: 0;
       border-radius: 50%;
-      background: #FFFFFF;
-      box-shadow: 0 10px 24px rgba(24, 78, 119, 0.12);
-      border: 2px solid rgba(24, 78, 119, 0.15);
+      border: 1.5px solid rgba(45, 106, 79, 0.38);
+      animation: luxuryRipple 3.6s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+    }
+    .ring.r1 { animation-delay: 0s; }
+    .ring.r2 { animation-delay: 1.2s; border-color: rgba(82, 183, 136, 0.45); }
+    .ring.r3 { animation-delay: 2.4s; border-color: rgba(212, 163, 115, 0.5); }
+
+    /* Golden sunburst aura glow */
+    .sunburst-aura {
+      position: absolute;
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(233, 196, 106, 0.35) 0%, rgba(82, 183, 136, 0.25) 45%, transparent 70%);
+      filter: blur(14px);
+      animation: pulseGlow 4s ease-in-out infinite alternate;
+    }
+
+    /* Ultra-luxurious glassmorphic brand orb */
+    .logo-orb {
+      position: relative;
+      width: 114px;
+      height: 114px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 35% 30%, #FFFFFF 0%, #F5FAF3 65%, #EAF3E7 100%);
       display: flex;
       align-items: center;
       justify-content: center;
+      box-shadow:
+        0 20px 40px -10px rgba(27, 67, 50, 0.3),
+        0 6px 16px rgba(45, 106, 79, 0.15),
+        0 0 0 1px rgba(255, 255, 255, 0.95) inset,
+        0 0 0 8px rgba(255, 255, 255, 0.65),
+        0 0 0 10px rgba(82, 183, 136, 0.22);
+      animation: floatLevitate 4.5s ease-in-out infinite;
       overflow: hidden;
     }
 
-    .logo-img {
-      width: 68px;
-      height: 68px;
+    /* Specular diagonal shimmer across the glass orb */
+    .logo-orb::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -60%;
+      width: 220%;
+      height: 200%;
+      background: linear-gradient(
+        55deg,
+        transparent 35%,
+        rgba(255, 255, 255, 0.6) 48%,
+        rgba(255, 255, 255, 0.85) 50%,
+        rgba(255, 255, 255, 0.6) 52%,
+        transparent 65%
+      );
+      transform: rotate(25deg);
+      animation: specularSweep 5s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .logo-orb img {
+      width: 72px;
+      height: 72px;
       object-fit: contain;
-      display: block;
-      filter: drop-shadow(0 2px 6px rgba(24, 78, 119, 0.15));
+      filter: drop-shadow(0 4px 10px rgba(27, 67, 50, 0.24));
+      z-index: 2;
     }
 
-    /* Brand Name Typography (Comfortaa brand styling matching logo) */
-    .splash-title {
-      font-family: 'Comfortaa', 'Outfit', sans-serif;
-      font-size: 36px;
-      font-weight: 700;
-      color: #184E77;
-      margin: 0 0 6px;
-      letter-spacing: -0.4px;
-      line-height: 1.15;
-      text-shadow: 0 2px 10px rgba(24, 78, 119, 0.08);
-    }
-
-    .splash-subtitle {
-      font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif;
-      font-size: 14.5px;
-      font-weight: 700;
-      color: #2D6A4F;
-      margin: 0 0 16px;
-      letter-spacing: 0.15px;
-      line-height: 1.35;
-    }
-
-    /* Motto Banner: 100% Vector Text & SVG Underline + Heart (Crystal Clear & Readable) */
-    .motto-card {
+    /* Brand Name with Emerald/Gold Luster */
+    .title-wrap {
       display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .title-leaf {
+      font-size: 20px;
+      filter: drop-shadow(0 2px 4px rgba(45, 106, 79, 0.2));
+      animation: swayIcon 3s ease-in-out infinite alternate;
+    }
+    .title {
+      font-family: 'Comfortaa', 'Playfair Display', serif;
+      font-size: 40px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+      margin: 0;
+      background: linear-gradient(135deg, #103322 0%, #1B4332 45%, #2D6A4F 80%, #52B788 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 3px 12px rgba(45, 106, 79, 0.15));
+    }
+
+    /* Tagline with elegant badge style */
+    .subtitle {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: #2D6A4F;
+      margin: 0 0 20px;
+      letter-spacing: 0.25px;
+      line-height: 1.45;
+      max-width: 330px;
+      opacity: 0.95;
+    }
+
+    /* Handwritten Motto with Golden Flourish */
+    .motto {
+      display: inline-flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      background: #FFFFFF;
-      border: 1.3px solid rgba(24, 78, 119, 0.14);
-      border-radius: 22px;
-      padding: 9px 20px 8px;
-      margin: 0 auto 20px;
-      box-shadow: 0 4px 16px rgba(24, 78, 119, 0.06);
-      width: 90%;
-      max-width: 300px;
+      margin-bottom: 24px;
+      padding: 6px 18px;
+      background: rgba(255, 255, 255, 0.45);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 24px;
+      border: 1px solid rgba(82, 183, 136, 0.22);
+      box-shadow: 0 4px 16px rgba(45, 106, 79, 0.05);
     }
-
-    .motto-text-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      line-height: 1;
-    }
-
     .motto-text {
       font-family: 'Caveat', cursive;
-      font-size: 23px;
+      font-size: 26px;
       font-weight: 700;
-      color: #184E77;
+      color: #1B4332;
+      line-height: 1.1;
       letter-spacing: 0.2px;
-      white-space: nowrap;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9);
     }
-
-    .motto-underline-svg {
-      width: 100%;
-      max-width: 250px;
+    .motto svg {
+      width: 220px;
       height: 16px;
       margin-top: 2px;
       display: block;
+      filter: drop-shadow(0 1px 2px rgba(45, 106, 79, 0.18));
     }
 
-    /* Loading Track & Shimmer Indicator */
-    .progress-track {
+    /* Premium Progress Track & Comet Head */
+    .loader {
       width: 100%;
-      max-width: 260px;
-      height: 7px;
-      background: rgba(24, 78, 119, 0.12);
-      border-radius: 14px;
-      overflow: hidden;
+      max-width: 280px;
+    }
+    .loader-line {
       position: relative;
-      margin-bottom: 14px;
+      width: 100%;
+      height: 6px;
+      border-radius: 12px;
+      background: rgba(45, 106, 79, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      overflow: hidden;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
     }
-
-    .progress-bar {
+    .loader-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
       height: 100%;
-      width: 48%;
-      border-radius: 14px;
-      background: linear-gradient(90deg, #184E77 0%, #2D6A4F 40%, #D4A373 75%, #184E77 100%);
-      box-shadow: 0 0 12px rgba(24, 78, 119, 0.4);
-      animation: shimmer 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      width: 45%;
+      border-radius: 12px;
+      background: linear-gradient(90deg, #1B4332 0%, #2D6A4F 35%, #52B788 70%, #E9C46A 100%);
+      box-shadow: 0 0 12px rgba(82, 183, 136, 0.8), 0 0 4px rgba(233, 196, 106, 0.9);
+      animation: luxurySlide 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
     }
 
-    /* Live Dynamic Status */
-    .splash-status {
+    /* Status text with emerald jewel dot */
+    .status {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      font-size: 14px;
+      justify-content: center;
+      margin-top: 14px;
+      font-size: 13.5px;
       font-weight: 700;
-      color: #334155;
-      letter-spacing: 0.15px;
+      color: #274C37;
+      letter-spacing: 0.2px;
       min-height: 22px;
     }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
+    .dot-glow {
+      position: relative;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
-      background-color: #2D6A4F;
-      box-shadow: 0 0 8px rgba(45, 106, 79, 0.6);
-      animation: pulseDot 1.4s ease-in-out infinite;
+      background: #2D6A4F;
+      box-shadow: 0 0 10px rgba(45, 106, 79, 0.8);
+      animation: dotPulse 1.6s ease-in-out infinite;
     }
-
+    .dot-glow::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(82, 183, 136, 0.6);
+      animation: dotRing 1.6s ease-out infinite;
+    }
     #status-text {
-      transition: opacity 0.25s ease-in-out;
+      transition: opacity 0.28s ease, transform 0.28s ease;
+      display: inline-block;
     }
 
-    /* Reassurance Feature Chips */
-    .chips-row {
+    /* Luxury Frosted Reassurance Chips */
+    .chips {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 7px;
-      margin-top: 18px;
+      gap: 10px;
+      margin-top: 24px;
     }
-
     .chip {
-      background: #FFFFFF;
-      border: 1px solid rgba(24, 78, 119, 0.14);
-      border-radius: 12px;
-      padding: 4px 10px;
-      font-size: 11.5px;
-      font-weight: 800;
-      color: #184E77;
-      box-shadow: 0 2px 6px rgba(24, 78, 119, 0.04);
-      letter-spacing: 0.1px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(82, 183, 136, 0.3);
+      border-radius: 16px;
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #123826;
+      box-shadow:
+        0 4px 14px rgba(45, 106, 79, 0.08),
+        0 1px 2px rgba(255, 255, 255, 0.9) inset;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .chip:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(45, 106, 79, 0.14);
+      border-color: rgba(212, 163, 115, 0.5);
+    }
+    .chip-icon {
+      font-size: 13px;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.12));
     }
 
-    /* Keyframes */
+    /* Staggered entrance animations */
+    .rise {
+      opacity: 0;
+      transform: translateY(22px);
+      animation: luxuryRise 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .d1 { animation-delay: 0.1s; }
+    .d2 { animation-delay: 0.28s; }
+    .d3 { animation-delay: 0.42s; }
+    .d4 { animation-delay: 0.56s; }
+    .d5 { animation-delay: 0.70s; }
+    .d6 { animation-delay: 0.84s; }
+
+    /* ── Keyframes ── */
+    @keyframes luxuryRise {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes floatLevitate {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50%      { transform: translateY(-7px) scale(1.025); }
+    }
     @keyframes pulseGlow {
-      0%, 100% {
-        transform: scale(1);
-        box-shadow: 0 14px 34px -4px rgba(24, 78, 119, 0.2);
-      }
-      50% {
-        transform: scale(1.05);
-        box-shadow: 0 18px 42px 0 rgba(24, 78, 119, 0.3);
-      }
+      0%   { opacity: 0.4; transform: scale(0.92); }
+      100% { opacity: 0.85; transform: scale(1.15); }
+    }
+    @keyframes luxuryRipple {
+      0%   { transform: scale(0.55); opacity: 0.8; }
+      80%  { opacity: 0.15; }
+      100% { transform: scale(1.48); opacity: 0; }
+    }
+    @keyframes luxurySlide {
+      0%   { transform: translateX(-140%); }
+      50%  { transform: translateX(80%); }
+      100% { transform: translateX(330%); }
+    }
+    @keyframes specularSweep {
+      0%, 25% { transform: translateX(-150%) rotate(25deg); opacity: 0; }
+      35%     { opacity: 1; }
+      65%     { opacity: 1; }
+      75%, 100% { transform: translateX(150%) rotate(25deg); opacity: 0; }
+    }
+    @keyframes dotPulse {
+      0%, 100% { transform: scale(0.9); opacity: 0.75; }
+      50%      { transform: scale(1.2); opacity: 1; }
+    }
+    @keyframes dotRing {
+      0%   { transform: scale(0.8); opacity: 0.9; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+    @keyframes swayIcon {
+      0%   { transform: rotate(-8deg); }
+      100% { transform: rotate(12deg); }
+    }
+    @keyframes driftA {
+      0%   { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(45px, 35px) scale(1.18); }
+    }
+    @keyframes driftB {
+      0%   { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-45px, -35px) scale(1.15); }
+    }
+    @keyframes driftC {
+      0%   { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-30px, 40px) scale(1.12); }
     }
 
-    @keyframes shimmer {
-      0% {
-        transform: translateX(-120%);
-      }
-      100% {
-        transform: translateX(320%);
-      }
+    @media (max-height: 700px) {
+      .logo-stage { width: 130px; height: 130px; margin-bottom: 16px; }
+      .logo-orb { width: 90px; height: 90px; }
+      .logo-orb img { width: 56px; height: 56px; }
+      .title { font-size: 32px; }
+      .subtitle { margin-bottom: 14px; font-size: 13px; }
+      .motto { margin-bottom: 16px; padding: 4px 14px; }
+      .motto-text { font-size: 22px; }
+      .chips { margin-top: 16px; gap: 6px; }
+      .chip { padding: 5px 10px; font-size: 11px; }
     }
 
-    @keyframes pulseDot {
-      0%, 100% {
-        opacity: 0.45;
-        transform: scale(0.85);
+    @media (prefers-reduced-motion: reduce) {
+      .bloom, .ring, .logo-orb, .loader-fill, .dot-glow, .rise, .sunburst-aura {
+        animation: none !important;
       }
-      50% {
-        opacity: 1;
-        transform: scale(1.25);
-      }
-    }
-
-    @keyframes floatOrb {
-      0% {
-        transform: translate(0, 0) scale(1);
-      }
-      100% {
-        transform: translate(30px, 20px) scale(1.1);
-      }
-    }
-
-    @media (max-width: 480px) {
-      #app-splash-loader {
-        padding: 14px;
-      }
-      .splash-card {
-        width: 100%;
-        max-width: 100%;
-        padding: 30px 18px 24px;
-        border-radius: 28px;
-      }
-      .logo-halo {
-        width: 106px;
-        height: 106px;
-        margin-bottom: 16px;
-      }
-      .logo-badge {
-        width: 84px;
-        height: 84px;
-      }
-      .logo-img {
-        width: 60px;
-        height: 60px;
-      }
-      .splash-title {
-        font-size: 31px;
-        margin-bottom: 4px;
-      }
-      .splash-subtitle {
-        font-size: 13.5px;
-        margin-bottom: 14px;
-      }
-      .motto-card {
-        width: 96%;
-        max-width: 300px;
-        padding: 7px 14px;
-        margin-bottom: 16px;
-      }
-      .motto-text {
-        font-size: 20px;
-      }
-      .progress-track {
-        max-width: 230px;
-      }
-      .chips-row {
-        gap: 6px;
-        margin-top: 15px;
-      }
-      .chip {
-        font-size: 11px;
-        padding: 4px 9px;
-      }
-    }
-
-    @media (max-height: 660px) {
-      .splash-card {
-        padding: 22px 16px 18px;
-        border-radius: 24px;
-      }
-      .logo-halo {
-        width: 86px;
-        height: 86px;
-        margin-bottom: 10px;
-      }
-      .logo-badge {
-        width: 68px;
-        height: 68px;
-      }
-      .logo-img {
-        width: 48px;
-        height: 48px;
-      }
-      .splash-title {
-        font-size: 26px;
-        margin-bottom: 2px;
-      }
-      .splash-subtitle {
-        font-size: 12.5px;
-        margin-bottom: 10px;
-      }
-      .motto-card {
-        margin-bottom: 10px;
-        padding: 5px 12px;
-      }
-      .motto-text {
-        font-size: 18px;
-      }
-      .progress-track {
-        margin-bottom: 10px;
-        height: 6px;
-      }
-      .splash-status {
-        font-size: 13px;
-        min-height: 18px;
-      }
-      .chips-row {
-        margin-top: 10px;
-      }
+      .rise { opacity: 1 !important; transform: none !important; }
+      #nature-canvas { display: none; }
     }
   </style>
 </head>
 <body>
-  <!-- Ambient Floating Orbs -->
-  <div class="ambient-orb orb-1"></div>
-  <div class="ambient-orb orb-2"></div>
-
-  <!-- Smriti Saathi Brand Loading Screen -->
   <div id="app-splash-loader" aria-label="Loading Smriti Saathi">
-    <div class="splash-card">
-      <div class="logo-halo">
-        <div class="logo-badge">
-          <img src="logo.png" alt="Smriti Saathi" class="logo-img" onerror="this.src='favicon.png'">
+    <!-- Nature light blooms & gold vignette -->
+    <div class="bloom bloom-a"></div>
+    <div class="bloom bloom-b"></div>
+    <div class="bloom bloom-c"></div>
+    <div class="gold-vignette"></div>
+
+    <!-- Interactive Falling Leaves & Golden Firefly Canvas -->
+    <canvas id="nature-canvas"></canvas>
+
+    <div class="stage">
+      <!-- Sacred Logo Orb with Energy Rings -->
+      <div class="logo-stage rise d1">
+        <span class="sunburst-aura"></span>
+        <span class="ring r1"></span>
+        <span class="ring r2"></span>
+        <span class="ring r3"></span>
+        <div class="logo-orb">
+          <img src="logo.png" alt="Smriti Saathi" onerror="this.src='favicon.png'">
         </div>
       </div>
 
-      <!-- Enhanced Brand Title (Comfortaa brand styling) -->
-      <h1 class="splash-title">Smriti Saathi</h1>
-      <p class="splash-subtitle">Your AI Saathi for Everyday Life & Memories</p>
+      <!-- Luxury Brand Title -->
+      <div class="title-wrap rise d2">
+        <span class="title-leaf">🌿</span>
+        <h1 class="title">Smriti Saathi</h1>
+        <span class="title-leaf" style="transform: scaleX(-1);">🌿</span>
+      </div>
 
-      <!-- 100% Crisp Vector Text Motto Banner with SVG Flourish -->
-      <div class="motto-card">
-        <div class="motto-text-row">
-          <span class="motto-text">Because every memory matters...</span>
-        </div>
-        <svg class="motto-underline-svg" viewBox="0 0 250 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Gentle curved underline swoosh -->
-          <path d="M 6 8 Q 120 14 210 7" stroke="#184E77" stroke-width="2.2" stroke-linecap="round"/>
-          <!-- Matching outline heart -->
-          <path d="M 221 5.5 C 219 2.5, 215 3.5, 216 7 C 217.5 10, 223 13, 225 14.5 C 227 13, 232.5 10, 234 7 C 235 3.5, 231 2.5, 229 5.5 L 225 9 Z" 
-                stroke="#184E77" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Tagline -->
+      <p class="subtitle rise d3">Your Caring AI Companion for Everyday Life &amp; Memories</p>
+
+      <!-- Handwritten Motto with Flowing Ribbon -->
+      <div class="motto rise d4">
+        <span class="motto-text">Because every memory matters…</span>
+        <svg viewBox="0 0 250 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="goldGreenGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#2D6A4F" />
+              <stop offset="50%" stop-color="#52B788" />
+              <stop offset="85%" stop-color="#D4A373" />
+              <stop offset="100%" stop-color="#E9C46A" />
+            </linearGradient>
+          </defs>
+          <path d="M 6 8.5 Q 120 15 210 7.5" stroke="url(#goldGreenGrad)" stroke-width="2.6" stroke-linecap="round"/>
+          <path d="M 221 5.5 C 219 2.5, 215 3.5, 216 7 C 217.5 10, 223 13, 225 14.5 C 227 13, 232.5 10, 234 7 C 235 3.5, 231 2.5, 229 5.5 L 225 9 Z"
+                stroke="url(#goldGreenGrad)" stroke-width="2.2" fill="rgba(233,196,106,0.35)" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
 
-      <div class="progress-track">
-        <div class="progress-bar"></div>
+      <!-- Glowing Liquid Progress Bar -->
+      <div class="loader rise d5">
+        <div class="loader-line"><span class="loader-fill"></span></div>
+        <div class="status">
+          <span id="status-text">🍃 Starting your companion…</span>
+        </div>
       </div>
 
-      <div class="splash-status">
-        <span class="status-dot"></span>
-        <span id="status-text">Starting your companion...</span>
-      </div>
-
-      <div class="chips-row">
-        <span class="chip">🔒 100% Private</span>
-        <span class="chip">⚡ Offline-Ready</span>
-        <span class="chip">🎙️ Voice First</span>
+      <!-- Reassurance Frosted Badges -->
+      <div class="chips rise d6">
+        <span class="chip"><span class="chip-icon">🔒</span> 100% Private</span>
+        <span class="chip"><span class="chip-icon">⚡</span> Offline-Ready</span>
+        <span class="chip"><span class="chip-icon">🎙️</span> Voice First</span>
       </div>
     </div>
   </div>
 
+  <!-- Falling Leaves & Glowing Nature Particles Script -->
   <script>
-    // Smooth dynamic reassuring status cycler
-    (function() {
+    (function () {
+      var canvas = document.getElementById("nature-canvas");
+      if (!canvas) return;
+      var ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      // Retina-crisp rendering: draw in CSS pixels, back the canvas
+      // with a device-pixel-ratio buffer so leaf edges stay sharp.
+      var dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+      var width = window.innerWidth;
+      var height = window.innerHeight;
+
+      function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        canvas.style.width = width + "px";
+        canvas.style.height = height + "px";
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      resize();
+      window.addEventListener("resize", resize);
+
+      // Curated Forest-Green & Amber Palette — each leaf is filled with
+      // a soft gradient (bright edge → deep base) for a lifelike sheen.
+      var leafPalettes = [
+        { hi: "#74C69D", main: "#2D6A4F", low: "#1B4332", vein: "#163D2E" }, // Forest Green
+        { hi: "#52B788", main: "#1B4332", low: "#0F2E22", vein: "#0B241A" }, // Deep Forest
+        { hi: "#95D5B2", main: "#52B788", low: "#2D6A4F", vein: "#276049" }, // Sage Green
+        { hi: "#E9C46A", main: "#D4A373", low: "#B07E4E", vein: "#8A5E38" }, // Golden Amber
+        { hi: "#F0D9A8", main: "#C79A5B", low: "#9C7038", vein: "#7A5528" }  // Warm Sand
+      ];
+
+      // Soft interactive breeze
+      var mouse = { x: -1000, y: -1000, lastX: 0, lastY: 0 };
+      window.addEventListener("mousemove", function (e) {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+      });
+      window.addEventListener("touchmove", function (e) {
+        if (e.touches && e.touches[0]) {
+          mouse.x = e.touches[0].clientX;
+          mouse.y = e.touches[0].clientY;
+        }
+      }, { passive: true });
+
+      // Gentle leaf count (calm, airy, zen atmosphere)
+      var LEAF_COUNT = 14;
+      var leaves = [];
+
+      function createLeaf(initialY) {
+        var palette = leafPalettes[Math.floor(Math.random() * leafPalettes.length)];
+        var leafType = Math.floor(Math.random() * 3); // 0 = Bodhi, 1 = fluttering, 2 = rounded
+        // Depth 0 (far, small, hazy, slow) → 1 (near, large, crisp, quick)
+        var depth = Math.random();
+        var scale = 0.4 + depth * 0.7;
+        return {
+          x: Math.random() * width,
+          y: initialY !== undefined ? initialY : -40 - Math.random() * 60,
+          palette: palette,
+          type: leafType,
+          depth: depth,
+          scale: scale,
+          speedY: 0.30 + depth * 0.55 + Math.random() * 0.18, // parallax: near falls faster
+          driftX: (Math.random() - 0.5) * 0.4,
+          swayAmp: 18 + Math.random() * 30,
+          swaySpeed: 0.008 + Math.random() * 0.010,
+          phase: Math.random() * Math.PI * 2,
+          rotation: Math.random() * Math.PI * 2,
+          rotSpeed: (Math.random() - 0.5) * 0.010,
+          tilt: 0, // sway-coupled lean, updated each frame
+          flip: Math.random() * Math.PI * 2,
+          flipSpeed: 0.006 + Math.random() * 0.012, // slow 3D tumble
+          opacity: 0.26 + depth * 0.42, // near leaves read stronger
+          blur: (1 - depth) * 2.4, // far leaves softly out of focus
+          windOffset: 0
+        };
+      }
+
+      for (var i = 0; i < LEAF_COUNT; i++) {
+        leaves.push(createLeaf(Math.random() * height));
+      }
+
+      // Delicate ambient sparks (calm forest embers)
+      var SPARK_COUNT = 9;
+      var sparks = [];
+      for (var s = 0; s < SPARK_COUNT; s++) {
+        sparks.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          radius: 1.0 + Math.random() * 1.6,
+          speedY: -(0.18 + Math.random() * 0.35),
+          speedX: (Math.random() - 0.5) * 0.25,
+          alpha: 0.15 + Math.random() * 0.35,
+          pulseSpeed: 0.02 + Math.random() * 0.03,
+          pulse: Math.random() * Math.PI * 2,
+          color: Math.random() > 0.5 ? "212, 163, 115" : "82, 183, 136"
+        });
+      }
+
+      // Draw a lifelike leaf: gradient body, soft depth-blur, delicate
+      // veins and a faint sheen highlight. Coupled tilt makes it lean
+      // into its sway like a real leaf drifting on the breeze.
+      function drawLeaf(ctx, leaf) {
+        ctx.save();
+        ctx.translate(leaf.x + leaf.windOffset, leaf.y);
+        ctx.rotate(leaf.rotation + leaf.tilt);
+
+        // Slow 3D tumble flip illusion
+        var flipScale = Math.cos(leaf.flip);
+        ctx.scale(leaf.scale * flipScale, leaf.scale);
+        ctx.globalAlpha = leaf.opacity * Math.max(0.28, Math.abs(flipScale));
+
+        // Far leaves sit gently out of focus for natural depth
+        if (leaf.blur > 0.15) {
+          ctx.shadowColor = "rgba(27, 67, 50, 0.35)";
+          ctx.shadowBlur = leaf.blur * 3;
+        }
+
+        // Vertical gradient body (bright tip → deep base)
+        var grad = ctx.createLinearGradient(0, -22, 0, 22);
+        grad.addColorStop(0, leaf.palette.hi);
+        grad.addColorStop(0.5, leaf.palette.main);
+        grad.addColorStop(1, leaf.palette.low);
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+
+        if (leaf.type === 0) {
+          // Classic Bodhi leaf — pointed tip, gentle shoulders
+          ctx.moveTo(0, -20);
+          ctx.bezierCurveTo(12, -12, 13, 8, 0, 20);
+          ctx.bezierCurveTo(-13, 8, -12, -12, 0, -20);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          _veins(ctx, leaf.palette.vein, 16, 5);
+        } else if (leaf.type === 1) {
+          // Slender fluttering leaf — asymmetric curve
+          ctx.moveTo(0, -22);
+          ctx.bezierCurveTo(11, -8, 8, 12, 0, 22);
+          ctx.bezierCurveTo(-7, 10, -9, -6, 0, -22);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          ctx.strokeStyle = leaf.palette.vein;
+          ctx.lineWidth = 0.9;
+          ctx.beginPath();
+          ctx.moveTo(0, -18);
+          ctx.quadraticCurveTo(2, 0, 0, 18);
+          ctx.stroke();
+        } else {
+          // Rounded broadleaf — soft heart-like silhouette
+          ctx.moveTo(0, -16);
+          ctx.bezierCurveTo(15, -16, 16, 10, 0, 20);
+          ctx.bezierCurveTo(-16, 10, -15, -16, 0, -16);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          _veins(ctx, leaf.palette.vein, 13, 7);
+        }
+
+        // Faint sheen highlight along one side (catches the light)
+        ctx.globalAlpha *= 0.5;
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.moveTo(-3, -14);
+        ctx.quadraticCurveTo(-6, 0, -3, 14);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      // Central + side veins for a leaf of half-height [h] and spread [w].
+      function _veins(ctx, color, h, w) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.0;
+        ctx.beginPath();
+        ctx.moveTo(0, -h);
+        ctx.lineTo(0, h);
+        ctx.stroke();
+        ctx.lineWidth = 0.6;
+        ctx.beginPath();
+        ctx.moveTo(0, -5); ctx.lineTo(w, -1);
+        ctx.moveTo(0, 4);  ctx.lineTo(w + 1, 8);
+        ctx.moveTo(0, -5); ctx.lineTo(-w, -1);
+        ctx.moveTo(0, 4);  ctx.lineTo(-(w + 1), 8);
+        ctx.stroke();
+      }
+
+      var running = true;
+      var lastTime = performance.now();
+
+      function animate(time) {
+        if (!running) return;
+        var dt = Math.min((time - lastTime) / 16.6, 2.0);
+        lastTime = time;
+
+        ctx.clearRect(0, 0, width, height);
+
+        // 1. Soothing golden stardust embers
+        for (var s = 0; s < sparks.length; s++) {
+          var sp = sparks[s];
+          sp.y += sp.speedY * dt;
+          sp.x += sp.speedX * dt;
+          sp.pulse += sp.pulseSpeed * dt;
+          var curAlpha = Math.max(0.08, sp.alpha + Math.sin(sp.pulse) * 0.18);
+
+          if (sp.y < -10) {
+            sp.y = height + 10;
+            sp.x = Math.random() * width;
+          }
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(sp.x, sp.y, sp.radius, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(" + sp.color + "," + curAlpha + ")";
+          ctx.shadowColor = "rgba(" + sp.color + ", 0.5)";
+          ctx.shadowBlur = 6;
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // 2. Calm, gentle falling leaves — far (hazy) drawn first so
+        //    crisp near leaves layer naturally on top.
+        leaves.sort(function (a, b) { return a.depth - b.depth; });
+        for (var i = 0; i < leaves.length; i++) {
+          var leaf = leaves[i];
+
+          // Slow organic sine-wave sway
+          leaf.phase += leaf.swaySpeed * dt;
+          var swaySpeedNow = Math.cos(leaf.phase); // -1..1, velocity of swing
+          var swayOffset = Math.sin(leaf.phase) * leaf.swayAmp;
+
+          // Motion updates: slow soothing fall & natural drift
+          leaf.y += leaf.speedY * dt;
+          leaf.x += leaf.driftX * dt;
+          leaf.rotation += leaf.rotSpeed * dt;
+          leaf.flip += leaf.flipSpeed * dt;
+
+          // Lean into the swing like a real leaf pivoting on the breeze
+          leaf.tilt = swaySpeedNow * 0.28;
+
+          // Gentle breeze when hovering near
+          var dx = (leaf.x + leaf.windOffset) - mouse.x;
+          var dy = leaf.y - mouse.y;
+          var dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 110 && dist > 0) {
+            var push = (1 - dist / 110) * 2.0;
+            leaf.windOffset += (dx / dist) * push;
+          }
+          leaf.windOffset *= 0.96; // Smooth calming damping
+
+          // Seamless wrap around screen boundaries
+          if (leaf.y > height + 40) {
+            leaves[i] = createLeaf(-30);
+          }
+          if (leaf.x < -35) leaf.x = width + 25;
+          if (leaf.x > width + 35) leaf.x = -25;
+
+          // Apply gentle sway to render position
+          var origX = leaf.x;
+          leaf.x += swayOffset * 0.16;
+          drawLeaf(ctx, leaf);
+          leaf.x = origX;
+        }
+
+        requestAnimationFrame(animate);
+      }
+
+      requestAnimationFrame(animate);
+
+      // Clean up when splash is dismissed
+      window.addEventListener("splash-dismissed", function () {
+        running = false;
+      });
+    })();
+
+    // Rotating reassuring status messages
+    (function () {
       var messages = [
-        "Starting your companion...",
-        "Preparing your safe sanctuary...",
-        "Preserving precious memories...",
-        "Almost ready for you..."
+        "🍃 Starting your companion…",
+        "✨ Preparing your safe sanctuary…",
+        "🌿 Gathering your precious memories…",
+        "🛡️ 100% Private & on-device…",
+        "🌸 Almost ready for you…"
       ];
       var idx = 0;
-      var statusEl = document.getElementById("status-text");
-      if (statusEl) {
-        setInterval(function() {
+      var el = document.getElementById("status-text");
+      if (el) {
+        setInterval(function () {
           idx = (idx + 1) % messages.length;
-          statusEl.style.opacity = "0";
-          setTimeout(function() {
-            statusEl.textContent = messages[idx];
-            statusEl.style.opacity = "1";
-          }, 200);
-        }, 2400);
+          el.style.opacity = "0";
+          el.style.transform = "translateY(4px)";
+          setTimeout(function () {
+            el.textContent = messages[idx];
+            el.style.opacity = "1";
+            el.style.transform = "translateY(0)";
+          }, 240);
+        }, 2200);
       }
     })();
 
-    // Robust Multi-Tier Splash Dismissal Engine
-    (function() {
-      var isDismissed = false;
+    // Robust splash dismissal once Flutter has painted
+    (function () {
+      var dismissed = false;
       var removalTimer = null;
 
       function dismissSplash() {
-        if (isDismissed) return;
-        isDismissed = true;
+        if (dismissed) return;
+        dismissed = true;
+        window.dispatchEvent(new Event("splash-dismissed"));
         var loader = document.getElementById("app-splash-loader");
         if (!loader) return;
         loader.classList.add("fade-out");
         loader.style.pointerEvents = "none";
-        removalTimer = setTimeout(function() {
-          try {
-            if (loader && loader.isConnected) {
-              loader.remove();
-            }
-          } catch (e) {
-            // The page may have been restored from the browser back-forward cache.
-          }
-        }, 600);
+        removalTimer = setTimeout(function () {
+          try { if (loader && loader.isConnected) loader.remove(); } catch (e) {}
+        }, 750);
       }
-
-      // Expose globally for Flutter / Dart to invoke if needed
       window.dismissSplash = dismissSplash;
 
-      // Tier 1: Native Flutter first-frame painted event (guaranteed UI painted)
-      window.addEventListener("flutter-first-frame", function() {
-        dismissSplash();
-      });
+      window.addEventListener("flutter-first-frame", dismissSplash);
 
-      // A restored page can receive a stale first-frame event after the splash
-      // has already been removed. Keep the cleanup state consistent.
-      window.addEventListener("pageshow", function() {
+      window.addEventListener("pageshow", function () {
         var loader = document.getElementById("app-splash-loader");
-        if (!loader && removalTimer) {
-          clearTimeout(removalTimer);
-          removalTimer = null;
-        }
+        if (!loader && removalTimer) { clearTimeout(removalTimer); removalTimer = null; }
       });
 
-      // Tier 2: Verify actual painted canvas / scene in DOM
-      function checkCanvasRendered() {
-        // In CanvasKit: flutter-view or glass-pane contains a real canvas
-        var canvases = document.querySelectorAll("flutter-view canvas, flt-glass-pane canvas, canvas.flt-canvas");
-        for (var i = 0; i < canvases.length; i++) {
-          if (canvases[i].width > 0 && canvases[i].height > 0) {
-            return true;
-          }
+      function canvasReady() {
+        var c = document.querySelectorAll("flutter-view canvas, flt-glass-pane canvas, canvas.flt-canvas");
+        for (var i = 0; i < c.length; i++) {
+          if (c[i].width > 0 && c[i].height > 0) return true;
         }
-        // In HTML renderer: scene host with rendered nodes
         var scene = document.querySelector("flt-scene-host, flt-scene");
-        if (scene && scene.children && scene.children.length > 0) {
-          return true;
-        }
-        return false;
+        return !!(scene && scene.children && scene.children.length > 0);
       }
 
       try {
-        var observer = new MutationObserver(function() {
-          if (checkCanvasRendered()) {
-            setTimeout(dismissSplash, 150);
-            observer.disconnect();
-          }
+        var observer = new MutationObserver(function () {
+          if (canvasReady()) { setTimeout(dismissSplash, 180); observer.disconnect(); }
         });
-        observer.observe(document.body || document.documentElement, {
-          childList: true,
-          subtree: true
-        });
+        observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
       } catch (e) {}
 
-      // Tier 4: Gentle poller checking for actual rendered canvas
-      var renderPoller = setInterval(function() {
-        if (checkCanvasRendered()) {
-          clearInterval(renderPoller);
-          dismissSplash();
-        }
+      var poller = setInterval(function () {
+        if (canvasReady()) { clearInterval(poller); dismissSplash(); }
       }, 250);
 
-      // Tier 5: Generous safety fallback (only if network completely stalled for 45s)
-      setTimeout(function() {
-        clearInterval(renderPoller);
-        dismissSplash();
-      }, 45000);
+      setTimeout(function () { clearInterval(poller); dismissSplash(); }, 45000);
 
-      // Tier 6: Manual user tap to dismiss if they want to enter immediately
       var splashEl = document.getElementById("app-splash-loader");
-      if (splashEl) {
-        splashEl.addEventListener("click", function() {
-          dismissSplash();
-        });
-      }
+      if (splashEl) splashEl.addEventListener("click", dismissSplash);
     })();
   </script>
 

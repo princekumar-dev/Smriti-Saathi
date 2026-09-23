@@ -10,6 +10,7 @@ import '../state/app_settings.dart';
 import '../state/auth_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_scale_button.dart';
+import '../widgets/fx/voice_waveform.dart';
 import '../widgets/offline_ai_modal.dart';
 
 import '../widgets/voice_checkin_dialog.dart';
@@ -33,6 +34,7 @@ class _SaathiScreenState extends State<SaathiScreen>
   bool _isListening = false;
   bool _isSpeaking = false;
   bool _isProcessing = false;
+  double _soundLevel = 0.0;
   String _activeMessage = 'Namaste... I am Saathi, your companion. I am right here listening with you.';
   String _userSpoken = '';
   String? _micStatusNotice;
@@ -216,7 +218,10 @@ class _SaathiScreenState extends State<SaathiScreen>
 
     if (_isListening) {
       await _speech.stopListening();
-      setState(() => _isListening = false);
+      setState(() {
+        _isListening = false;
+        _soundLevel = 0.0;
+      });
       if (_userSpoken.trim().isNotEmpty &&
           _userSpoken != 'Listening to your voice...' &&
           _userSpoken != 'Listening with care...') {
@@ -231,6 +236,7 @@ class _SaathiScreenState extends State<SaathiScreen>
     setState(() {
       _isSpeaking = false;
       _isListening = true;
+      _soundLevel = 0.0;
       _userSpoken = 'Listening with care...';
       _activeMessage = userName.isNotEmpty
           ? 'I am listening with love, $userName... Take your time.'
@@ -240,6 +246,10 @@ class _SaathiScreenState extends State<SaathiScreen>
 
     final started = await _speech.startListening(
       language: settings.language,
+      onSoundLevelChange: (level) {
+        if (!mounted || !_isListening) return;
+        setState(() => _soundLevel = level);
+      },
       onResult: (text, isFinal) {
         if (!mounted) return;
         setState(() {
@@ -845,9 +855,21 @@ class _SaathiScreenState extends State<SaathiScreen>
         builder: (context, _) {
           final pulse = _orbController.value;
 
-          final outerScale = 1.0 + (pulse * (_isListening ? 0.3 : 0.12));
-          final midScale = 1.0 + (pulse * (_isListening ? 0.2 : 0.08));
-          final glowOpacity = _isListening ? 0.35 : (_isSpeaking ? 0.2 : 0.1);
+          // Live voice amplitude (0..1), from speech_to_text's ~-2..10 range.
+          final voice = _isListening
+              ? ((_soundLevel + 2) / 12).clamp(0.0, 1.0)
+              : 0.0;
+
+          final outerScale = 1.0 +
+              (pulse * (_isListening ? 0.3 : 0.12)) +
+              (voice * 0.22);
+          final midScale = 1.0 +
+              (pulse * (_isListening ? 0.2 : 0.08)) +
+              (voice * 0.14);
+          final coreScale = 1.0 + (voice * 0.12);
+          final glowOpacity = _isListening
+              ? (0.35 + voice * 0.3)
+              : (_isSpeaking ? 0.2 : 0.1);
 
           return SizedBox(
             width: 200,
@@ -910,7 +932,9 @@ class _SaathiScreenState extends State<SaathiScreen>
                   ),
                 ),
                 // Core orb
-                Container(
+                Transform.scale(
+                  scale: coreScale,
+                  child: Container(
                   width: 96,
                   height: 96,
                   decoration: BoxDecoration(
@@ -939,15 +963,22 @@ class _SaathiScreenState extends State<SaathiScreen>
                   ),
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
-                    child: Icon(
-                      _isListening
-                          ? Icons.graphic_eq_rounded
-                          : (_isSpeaking ? Icons.volume_up_rounded : Icons.mic_rounded),
-                      key: ValueKey(_isListening ? 'listening' : (_isSpeaking ? 'speaking' : 'idle')),
-                      size: 42,
-                      color: Colors.white,
-                    ),
+                    child: (_isListening || _isSpeaking)
+                        ? VoiceWaveform(
+                            key: ValueKey(_isListening ? 'wave_listen' : 'wave_speak'),
+                            active: true,
+                            level: _isListening ? _soundLevel : null,
+                            color: Colors.white,
+                            height: 34,
+                          )
+                        : const Icon(
+                            Icons.mic_rounded,
+                            key: ValueKey('idle'),
+                            size: 42,
+                            color: Colors.white,
+                          ),
                   ),
+                ),
                 ),
               ],
             ),

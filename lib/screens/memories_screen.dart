@@ -5,8 +5,10 @@ import '../services/saathi_ai_engine.dart';
 import '../services/speech_service.dart';
 import '../services/voice_engine.dart';
 import '../state/app_settings.dart';
+import '../theme/app_motion.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_scale_button.dart';
+import '../widgets/fx/fade_slide_in.dart';
 import '../widgets/offline_badge.dart';
 
 class MemoriesScreen extends StatefulWidget {
@@ -477,7 +479,9 @@ class _MemoriesScreenState extends State<MemoriesScreen> {
           slivers: [
             // Media Permission & Photo Access Banner
             SliverToBoxAdapter(
-              child: Padding(
+              child: FadeSlideIn(
+                delay: AppMotion.staggerDelay(0),
+                child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
                 child: Container(
                   padding: const EdgeInsets.all(16),
@@ -554,12 +558,15 @@ class _MemoriesScreenState extends State<MemoriesScreen> {
                     ],
                   ),
                 ),
+                ),
               ),
             ),
 
             // Top Hero: Memory Quiz Banner & Recall Score
             SliverToBoxAdapter(
-              child: Padding(
+              child: FadeSlideIn(
+                delay: AppMotion.staggerDelay(1),
+                child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
                 child: Container(
                   padding: const EdgeInsets.all(18),
@@ -620,11 +627,14 @@ class _MemoriesScreenState extends State<MemoriesScreen> {
                   ),
                 ),
               ),
+              ),
             ),
 
             // Add Memory Button
             SliverToBoxAdapter(
-              child: Padding(
+              child: FadeSlideIn(
+                delay: AppMotion.staggerDelay(2),
+                child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                 child: Row(
                   children: [
@@ -659,6 +669,7 @@ class _MemoriesScreenState extends State<MemoriesScreen> {
                     ),
                   ],
                 ),
+              ),
               ),
             ),
 

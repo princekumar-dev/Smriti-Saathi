@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../data/sample_data.dart';
 import '../services/api_service.dart';
+import '../theme/app_motion.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_scale_button.dart';
+import '../widgets/fx/fade_slide_in.dart';
 
 class RoutineScreen extends StatefulWidget {
   const RoutineScreen({super.key});
@@ -198,7 +200,9 @@ class _RoutineScreenState extends State<RoutineScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Progress Overview Card
-              Container(
+              FadeSlideIn(
+                delay: AppMotion.staggerDelay(0),
+                child: Container(
                 padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
                   gradient: AppTheme.emeraldGradient,
@@ -260,16 +264,20 @@ class _RoutineScreenState extends State<RoutineScreen> {
                   ],
                 ),
               ),
+              ),
 
               const SizedBox(height: 24),
 
-              const Text(
+              FadeSlideIn(
+                delay: AppMotion.staggerDelay(1),
+                child: const Text(
                 'Today\'s Schedule',
                 style: TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.w900,
                   color: AppTheme.deepForest,
                 ),
+              ),
               ),
               const SizedBox(height: 12),
 

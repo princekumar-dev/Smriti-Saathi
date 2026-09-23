@@ -145,12 +145,20 @@ $query
     final langInfo = AppTranslations.getLanguageInfo(language);
     final lang = langInfo.englishName.toLowerCase();
 
-    // RAG fallback grounding: if question is about medication or family and we have RAG context
-    if (ragContext.isNotEmpty && (lower.contains('medicine') || lower.contains('pill') || lower.contains('dose') || lower.contains('routine') || lower.contains('family') || lower.contains('who') || lower.contains('remember'))) {
-      if (lower.contains('medicine') || lower.contains('pill') || lower.contains('dose')) {
+    // RAG fallback grounding: if question is about medication, family, safe zone or memory
+    if (ragContext.isNotEmpty) {
+      if (lower.contains('where am i') || lower.contains('where is my house') || lower.contains('home') || lower.contains('lost')) {
+        return "You are resting safely in your peaceful home, $senior... Your loved ones and I are right here watching over you.";
+      }
+      if (lower.contains('medicine') || lower.contains('pill') || lower.contains('dose') || lower.contains('tablet') || lower.contains('routine')) {
         return "Based on your schedule, $senior: $ragContext";
       }
-      return "Here is what I have recorded for you, $senior: $ragContext";
+      if (lower.contains('family') || lower.contains('daughter') || lower.contains('son') || lower.contains('who')) {
+        return "Here is your family information, $senior: $ragContext";
+      }
+      if (lower.contains('remember') || lower.contains('memory') || lower.contains('photo') || lower.contains('trip')) {
+        return "Here is your cherished memory, $senior: $ragContext";
+      }
     }
 
     // 0. Math and arithmetic calculation (e.g. 12 * 12, 15 + 25)
@@ -191,20 +199,53 @@ $query
       }
     }
 
-    // North-Eastern: Assamese
+    // North-Eastern: Assamese (অসমীয়া)
     if (lang.contains('assamese')) {
-      if (lower.contains('worried') || lower.contains('scared') || lower.contains('fear')) {
+      if (lower.contains('where') || lower.contains('home') || lower.contains('ঘৰ') || lower.contains('ক’ত')) {
+        return "আপুনি নিজৰ মৰমৰ ঘৰতেই সুৰক্ষিতভাৱে বিশ্ৰাম কৰি আছে, $senior... চিন্তা নকৰিব, মই আৰু আপোনাৰ পৰিয়াল আপোনাৰ ওচৰতেই আছোঁ।";
+      }
+      if (lower.contains('worried') || lower.contains('scared') || lower.contains('fear') || lower.contains('ভয়')) {
         return "চিন্তা নকৰিব, $senior... মই আপোনাৰ ওচৰতে আছোঁ। আপুনি সম্পূৰ্ণ সুৰক্ষিত।";
       }
       return "নমস্কাৰ, $senior। মই আপোনাৰ কথাবোৰ শুনিলোঁ। মই সদায়েই আপোনাৰ লগত আছোঁ।";
     }
 
-    // North-Eastern: Manipuri (Meiteilon)
+    // North-Eastern: Manipuri (মৈতৈলোন্ / Meiteilon)
     if (lang.contains('manipuri')) {
+      if (lower.contains('where') || lower.contains('home') || lower.contains('য়ুম')) {
+        return "নহাক্কী ইমুংদা নহাক শান্ত ওইনা লৈরি, $senior... অকিবা লৈগনবা, ঐ নহাক্কী নক্ননা লৈরি।";
+      }
       if (lower.contains('worried') || lower.contains('scared') || lower.contains('fear')) {
         return "অকিবা লৈগনবা, $senior... ঐ নহাক্কী নক্ননা লৈরি। নহাক শান্ত ওইনা লৈয়ু।";
       }
       return "খুরুমজরি, $senior। ঐ নহাক্কী স্মৃতী সাথীনি। ঐ নহাক্কী পাউ শুনবা য়াই।";
+    }
+
+    // North-Eastern: Mizo
+    if (lang.contains('mizo')) {
+      if (lower.contains('where') || lower.contains('home') || lower.contains('in')) {
+        return "I in lumah him takin i awm e, $senior... Hlau suh aw, i chhungte leh keimah i kiangah kan awm reng e.";
+      }
+      if (lower.contains('worried') || lower.contains('scared') || lower.contains('fear')) {
+        return "Hlau suh aw, $senior... I kiangah ka awm reng e. I him a nia.";
+      }
+      return "Chibai, $senior. I țawngkam hi ka hria e, i kiangah ka awm tlat.";
+    }
+
+    // North-Eastern / Himalayan: Nepali (नेपाली)
+    if (lang.contains('nepali')) {
+      if (lower.contains('where') || lower.contains('home') || lower.contains('घर') || lower.contains('कहाँ')) {
+        return "हजुर आफ्नै घरमा सुरक्षित र आरामसँग हुनुहुन्छ, $senior... चिन्ता नलिनुहोस्, हामी हजुरकै साथमा छौं।";
+      }
+      if (lower.contains('worried') || lower.contains('scared') || lower.contains('fear') || lower.contains('डर')) {
+        return "चिन्ता नलिनुहोस्, $senior... म तपाईंकै साथमा छु। तपाईं सुरक्षित हुनुहुन्छ।";
+      }
+      return "नमस्ते, $senior। म तपाईंको कुरा सुन्दैछु, हजुरलाई सहयोग गर्न पाउँदा खुसी लाग्यो।";
+    }
+
+    // North-Eastern: Manipuri / Meitei
+    if (lang.contains('manipuri') || lang.contains('meitei')) {
+      return "খুরুমজরি, $senior... ঐহাক নখোইগা লোয়ননা লৈরি, নখোইগী ৱারী পাউ শুনবা য়াই।";
     }
 
     // North-Eastern: Mizo

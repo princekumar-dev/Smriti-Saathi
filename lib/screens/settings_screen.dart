@@ -1,10 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import '../services/tts/voice_model_manager.dart';
+import '../services/tts/voice_model_registry.dart';
 
 import '../state/app_settings.dart';
 import '../state/auth_session.dart';
 import '../state/auth_state.dart';
+import '../theme/app_motion.dart';
 import '../theme/app_theme.dart';
 import '../services/voice_engine.dart';
+import '../widgets/fx/fade_slide_in.dart';
 import '../widgets/language_selection_modal.dart';
 import '../widgets/screen_header.dart';
 import 'onboarding_screen.dart';
@@ -31,7 +37,12 @@ class SettingsScreen extends StatelessWidget {
                     showBack: true,
                   ),
                 ),
-                SliverToBoxAdapter(child: _buildProfileCard(context)),
+                SliverToBoxAdapter(
+                  child: FadeSlideIn(
+                    delay: AppMotion.staggerDelay(0),
+                    child: _buildProfileCard(context),
+                  ),
+                ),
                 SliverToBoxAdapter(child: _sectionTitle(context, 'Easier reading')),
                 SliverToBoxAdapter(
                   child: _settingsContainer(
@@ -110,6 +121,8 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       _divider(),
                       _buildTestVoiceTile(context, settings),
+                      _divider(),
+                      _buildOfflineVoicePackTile(context, settings),
                     ],
                   ),
                 ),
@@ -682,6 +695,54 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
+              if (engine.canImproveVoiceQuality &&
+                  engine.voiceQualityGuidance.isNotEmpty) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppTheme.warmAmber.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppTheme.warmAmber.withValues(alpha: 0.35),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.tips_and_updates_rounded,
+                              size: 18, color: AppTheme.warmAmber),
+                          const SizedBox(width: 8),
+                          Text(
+                            engine.isUsingPhoneticFallback
+                                ? 'A clearer voice is available'
+                                : 'Get an even more natural voice',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.deepForest,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        engine.voiceQualityGuidance,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          height: 1.4,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.muted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               InkWell(
                 onTap: () {
                   if (isSpeaking) {
@@ -741,6 +802,203 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
               ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOfflineVoicePackTile(BuildContext context, AppSettings settings) {
+    if (kIsWeb) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            _settingIcon(Icons.cloud_done_rounded),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Online Natural Voice (Browser)',
+                    style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'High-fidelity cloud neural voices active via Microsoft Edge / Chrome',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.muted),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final model = VoiceModelRegistry.getModelFor(
+      language: settings.language,
+      persona: settings.voicePersona,
+    );
+
+    if (model == null || !model.isNeuralAvailable) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            _settingIcon(Icons.tune_rounded),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Calibrated Device Voice',
+                    style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Using calibrated native device voice for ${settings.language}',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.muted),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return AnimatedBuilder(
+      animation: VoiceModelManager(),
+      builder: (context, _) {
+        final manager = VoiceModelManager();
+        final state = manager.getState(model.id);
+        final progress = manager.getProgress(model.id);
+        final isReady = state == VoiceModelState.ready;
+        final isDownloading = state == VoiceModelState.downloading;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _settingIcon(
+                    isReady
+                        ? Icons.offline_bolt_rounded
+                        : (isDownloading
+                            ? Icons.downloading_rounded
+                            : Icons.download_for_offline_outlined),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isReady
+                              ? 'Offline Natural Voice Active'
+                              : (isDownloading
+                                  ? 'Downloading Natural Voice…'
+                                  : 'Natural Offline Voice Pack'),
+                          style: const TextStyle(
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isReady
+                              ? '${model.speakerName} · ${model.sizeLabel} stored locally'
+                              : '${model.sizeLabel} download · Speaks 100% offline afterwards',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: isReady ? AppTheme.forest : AppTheme.muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (isDownloading) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: progress > 0 ? progress : null,
+                    minHeight: 6,
+                    backgroundColor: AppTheme.forest.withValues(alpha: 0.12),
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(AppTheme.forest),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${(progress * 100).toInt()}% downloaded · Extracting & verifying…',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.muted,
+                  ),
+                ),
+              ] else if (isReady) ...[
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.forest.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.check_circle_rounded, size: 14, color: AppTheme.forest),
+                          SizedBox(width: 5),
+                          Text(
+                            'Ready for Offline Use',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.forest,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: () => manager.deleteModel(model),
+                      icon: const Icon(Icons.delete_outline_rounded, size: 16, color: AppTheme.coral),
+                      label: const Text(
+                        'Free space',
+                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppTheme.coral),
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => manager.downloadModel(model),
+                    icon: const Icon(Icons.download_rounded, size: 18),
+                    label: Text('Download ${model.speakerName} (${model.sizeLabel})'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.forest,
+                      side: BorderSide(color: AppTheme.forest.withValues(alpha: 0.35), width: 1.2),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         );

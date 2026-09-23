@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/app_assets.dart';
 import '../theme/app_theme.dart';
 
 class BrandMark extends StatelessWidget {
@@ -31,6 +32,8 @@ class BrandMark extends StatelessWidget {
         'assets/images/brand_lockup_trans.png',
         height: bannerHeight,
         fit: BoxFit.contain,
+        gaplessPlayback: true,
+        filterQuality: FilterQuality.medium,
         errorBuilder: (context, error, stackTrace) => _buildFallback(context),
       );
     }
@@ -58,14 +61,9 @@ class BrandMark extends StatelessWidget {
               width: 1.2,
             ),
           ),
-          child: Image.asset(
-            'assets/images/logo.png',
+          child: AppAssets.logo(
             fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => Icon(
-              Icons.favorite_rounded,
-              color: AppTheme.forest,
-              size: logoSize * 0.55,
-            ),
+            fallbackSize: logoSize * 0.55,
           ),
         ),
         if (showDivider) ...[

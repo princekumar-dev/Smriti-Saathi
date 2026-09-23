@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_motion.dart';
 import '../theme/app_theme.dart';
+import '../widgets/fx/fade_slide_in.dart';
 import '../widgets/screen_header.dart';
 
 class ActivitiesScreen extends StatelessWidget {
@@ -23,8 +25,10 @@ class ActivitiesScreen extends StatelessWidget {
                 showBack: canPop,
               ),
             ),
-            const SliverToBoxAdapter(
-              child: Padding(
+            SliverToBoxAdapter(
+              child: FadeSlideIn(
+                delay: AppMotion.staggerDelay(0),
+                child: const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 child: HeroBanner(
                   title: 'Keep your mind active',
@@ -32,12 +36,15 @@ class ActivitiesScreen extends StatelessWidget {
                   icon: Icons.lightbulb_rounded,
                 ),
               ),
+              ),
             ),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 22, 20, 30),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  _activityCard(
+                  FadeSlideIn(
+                    delay: AppMotion.staggerDelay(1),
+                    child: _activityCard(
                     context,
                     icon: Icons.psychology_rounded,
                     title: 'Memory Match',
@@ -45,8 +52,11 @@ class ActivitiesScreen extends StatelessWidget {
                     duration: '5 minutes',
                     color: AppTheme.sage,
                   ),
+                  ),
                   const SizedBox(height: 12),
-                  _activityCard(
+                  FadeSlideIn(
+                    delay: AppMotion.staggerDelay(2),
+                    child: _activityCard(
                     context,
                     icon: Icons.record_voice_over_rounded,
                     title: 'Remember & Tell',
@@ -54,8 +64,11 @@ class ActivitiesScreen extends StatelessWidget {
                     duration: '10 minutes',
                     color: AppTheme.paleTerracotta,
                   ),
+                  ),
                   const SizedBox(height: 12),
-                  _activityCard(
+                  FadeSlideIn(
+                    delay: AppMotion.staggerDelay(3),
+                    child: _activityCard(
                     context,
                     icon: Icons.music_note_rounded,
                     title: 'Familiar Music',
@@ -63,14 +76,18 @@ class ActivitiesScreen extends StatelessWidget {
                     duration: '10 minutes',
                     color: AppTheme.lavender,
                   ),
+                  ),
                   const SizedBox(height: 12),
-                  _activityCard(
+                  FadeSlideIn(
+                    delay: AppMotion.staggerDelay(4),
+                    child: _activityCard(
                     context,
                     icon: Icons.menu_book_rounded,
                     title: 'Finish the Story',
                     description: 'Complete a simple story',
                     duration: '5 minutes',
                     color: AppTheme.sand,
+                  ),
                   ),
                 ]),
               ),

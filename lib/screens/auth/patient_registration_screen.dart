@@ -6,8 +6,10 @@ import '../../data/app_translations.dart';
 import '../../navigation/app_shell.dart';
 import '../../state/app_settings.dart';
 import '../../state/auth_state.dart';
+import '../../theme/app_motion.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/animated_scale_button.dart';
+import '../../widgets/fx/fade_slide_in.dart';
 import '../caretaker/caretaker_dashboard_screen.dart';
 
 class PatientRegistrationScreen extends StatefulWidget {
@@ -376,7 +378,9 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Premium Info Banner
-              Container(
+              FadeSlideIn(
+                delay: AppMotion.staggerDelay(0),
+                child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -443,6 +447,7 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                     ),
                   ],
                 ),
+              ),
               ),
 
               const SizedBox(height: 22),

@@ -3,6 +3,25 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 import '../data/app_translations.dart';
+import 'tts/neural_tts_service.dart';
+import 'tts/voice_model_manager.dart';
+import 'tts/voice_model_registry.dart';
+
+/// Describes how good the currently-active voice is for the selected language,
+/// so the UI can gently guide the user to install a better offline voice pack.
+enum VoiceQuality {
+  /// A modern neural / natural voice in the correct language is active. Ideal.
+  natural,
+
+  /// A native-language voice is active, but it is a basic (non-neural) engine voice.
+  basicNative,
+
+  /// No native voice for this language; speaking via Romanized Indian-English companion.
+  phoneticFallback,
+
+  /// No usable voice found yet (engine still loading or none installed).
+  unavailable,
+}
 
 /// Senior-Friendly Voice & Speech Output Engine
 /// Handles natural voice selection, multilingual text-to-speech,
@@ -15,8 +34,12 @@ class VoiceEngine extends ChangeNotifier {
   }
 
   final FlutterTts _tts = FlutterTts();
+  final NeuralTtsService _neuralTts = NeuralTtsService();
+  final VoiceModelManager _modelManager = VoiceModelManager();
+
   bool _isInitialized = false;
   bool _isSpeaking = false;
+  bool _isNeuralActive = false;
   String? _currentUtterance;
   String _currentLanguage = 'English';
   bool _isUsingPhoneticFallback = false;
@@ -26,6 +49,10 @@ class VoiceEngine extends ChangeNotifier {
   double _pitch = 0.98; // Gentle, warm natural vocal pitch
   double _volume = 1.0;
   String _persona = 'female'; // 'female' (Warm Companion) | 'male' (Gentle Companion) | 'auto'
+  double _langRateMul = 1.0;
+  double _langPitchAdd = 0.0;
+
+
 
   List<dynamic> _availableVoices = [];
   Map<String, String>? _activeVoice;
@@ -33,6 +60,9 @@ class VoiceEngine extends ChangeNotifier {
 
   bool get isSpeaking => _isSpeaking;
   bool get isInitialized => _isInitialized;
+  bool get isNeuralActive => _isNeuralActive;
+  VoiceModelManager get modelManager => _modelManager;
+  NeuralTtsService get neuralTts => _neuralTts;
   String? get currentUtterance => _currentUtterance;
   String get currentLanguage => _currentLanguage;
   bool get isUsingPhoneticFallback => _isUsingPhoneticFallback;
@@ -44,6 +74,15 @@ class VoiceEngine extends ChangeNotifier {
   Map<String, String>? get activeVoice => _activeVoice;
 
   String get activeVoiceName {
+    if (_isNeuralActive) {
+      final model = VoiceModelRegistry.getModelFor(
+        language: _currentLanguage,
+        persona: _persona,
+      );
+      if (model != null) {
+        return '${model.speakerName} (Neural Offline)';
+      }
+    }
     if (_activeVoice != null && _activeVoice!['name'] != null) {
       final name = _activeVoice!['name']!;
       // Clean up common system prefixes for senior readability
@@ -54,6 +93,51 @@ class VoiceEngine extends ChangeNotifier {
           .trim();
     }
     return _persona == 'female' ? 'Warm Companion' : 'Gentle Companion';
+  }
+
+  /// Assess how natural/appropriate the active voice is for the current language.
+  VoiceQuality get voiceQuality {
+    if (_isNeuralActive) return VoiceQuality.natural;
+    if (_activeVoice == null || (_activeVoice!['name'] ?? '').isEmpty) {
+      return VoiceQuality.unavailable;
+    }
+    if (_isUsingPhoneticFallback) return VoiceQuality.phoneticFallback;
+    final n = (_activeVoice!['name'] ?? '').toLowerCase();
+    const naturalMarkers = [
+      'natural', 'neural', 'online', 'wavenet',
+      'journey', 'studio', 'enhanced', 'premium',
+    ];
+    if (naturalMarkers.any(n.contains)) return VoiceQuality.natural;
+    return VoiceQuality.basicNative;
+  }
+
+  /// True when a higher-quality offline voice could meaningfully improve things,
+  /// so the UI may surface a gentle "install a better voice" hint.
+  bool get canImproveVoiceQuality =>
+      voiceQuality == VoiceQuality.phoneticFallback ||
+      voiceQuality == VoiceQuality.basicNative ||
+      voiceQuality == VoiceQuality.unavailable;
+
+  /// Short, elder-friendly guidance for getting a natural offline voice for the
+  /// current language. Platform-aware. Returns '' when the voice is already natural.
+  String get voiceQualityGuidance {
+    switch (voiceQuality) {
+      case VoiceQuality.natural:
+        return '';
+      case VoiceQuality.basicNative:
+      case VoiceQuality.phoneticFallback:
+      case VoiceQuality.unavailable:
+        if (kIsWeb) {
+          return 'For the most natural voice, open this app in Microsoft Edge or Chrome and stay connected once so the natural “Online” voice for $_currentLanguage can load.';
+        }
+        if (defaultTargetPlatform == TargetPlatform.android) {
+          return 'For a natural offline voice in $_currentLanguage, open Settings → System → Languages → Text-to-speech, pick “Google Speech Services”, then Install voice data for $_currentLanguage. It works fully offline afterwards.';
+        }
+        if (defaultTargetPlatform == TargetPlatform.iOS) {
+          return 'For a natural offline voice in $_currentLanguage, open iPhone Settings → Accessibility → Spoken Content → Voices and download a $_currentLanguage voice. It then works offline.';
+        }
+        return 'Install a $_currentLanguage voice pack in your system Text-to-speech settings for the most natural offline voice.';
+    }
   }
 
   Future<void> _initTts() async {
@@ -148,15 +232,19 @@ class VoiceEngine extends ChangeNotifier {
     }
     normalized = normalized.clamp(0.70, 1.25);
 
+    // Apply per-language pacing (some scripts/voices need a calmer, clearer pace
+    // for an elder to follow comfortably). _langRateMul is <= 1.0.
+    normalized *= _langRateMul;
+
     if (kIsWeb) {
       // In Microsoft Edge & Chrome Web Speech API, Microsoft Online (Natural) neural voices
       // run through Azure neural vocoders at 24kHz.
       // Playing at 1.0 delivers the 100% natural, pristine, soothing human inflection.
       // Keeping rate around 1.0 prevents local audio DSP pitch/time flutter.
-      return normalized.clamp(0.88, 1.12);
+      return normalized.clamp(0.82, 1.12);
     } else {
       // FlutterTTS Android/iOS/Windows native runner: ~0.44 provides calm, gentle speech.
-      return (normalized * 0.44).clamp(0.34, 0.58);
+      return (normalized * 0.44).clamp(0.30, 0.58);
     }
   }
 
@@ -171,7 +259,7 @@ class VoiceEngine extends ChangeNotifier {
     // Keep pitch bounded to natural vocal sweet spot (0.92 to 1.10)
     // On Web, preserve the neural vocoder by strictly keeping pitch at 1.0
     // to prevent the browser's local DSP pitch-shifter from adding synthetic robotic artifacts.
-    final naturalPitch = pitch.clamp(0.92, 1.10);
+    final naturalPitch = (pitch + _langPitchAdd).clamp(0.92, 1.10);
     try {
       if (kIsWeb) {
         await _tts.setPitch(1.0);
@@ -185,14 +273,13 @@ class VoiceEngine extends ChangeNotifier {
   Future<void> setPersona(String persona) async {
     final lower = persona.toLowerCase();
     _persona = lower.contains('male') && !lower.contains('fe') ? 'male' : 'female';
-    if (kIsWeb) {
-      await _tts.setPitch(1.0);
-      await _tts.setSpeechRate(_persona == 'male' ? 0.90 : 0.92);
-    } else {
-      await _tts.setPitch(_persona == 'male' ? 0.96 : 1.0);
-      await _tts.setSpeechRate(_persona == 'male' ? 0.42 : 0.44);
-    }
+    // A gentle male companion reads a hair lower & slower; the warm female
+    // companion sits at the natural sweet spot. Route through the shared
+    // rate/pitch pipeline so per-language pacing is preserved.
+    _pitch = _persona == 'male' ? 0.96 : 1.0;
     await _selectOptimalVoiceForCurrentLanguage();
+    await _applySpeechRate(_speechRate);
+    await _applyPitch(_pitch);
     notifyListeners();
   }
 
@@ -247,7 +334,69 @@ class VoiceEngine extends ChangeNotifier {
       } catch (_) {}
     }
 
+    // Resolve per-language pacing/warmth and re-apply so the newly chosen voice
+    // speaks at an elder-comfortable, soothing pace for this specific language.
+    _resolveLanguageProsody(language);
+    await _applySpeechRate(_speechRate);
+    await _applyPitch(_pitch);
+
     notifyListeners();
+  }
+
+  /// Resolves calm, clear per-language pacing + warmth tuned for elderly listeners.
+  /// Dravidian and phonetic-fallback languages get a gentler pace so every
+  /// syllable lands clearly. Values are conservative to stay natural, never robotic.
+  void _resolveLanguageProsody(String language) {
+    final l = language.toLowerCase();
+
+    double rateMul = 1.0;
+    double pitchAdd = 0.0;
+
+    // Dravidian scripts: longer agglutinative words — slow a touch for clarity.
+    if (l.contains('tamil') || l.contains('தமிழ்')) {
+      rateMul = 0.94;
+      pitchAdd = 0.01;
+    } else if (l.contains('telugu') || l.contains('తెలుగు')) {
+      rateMul = 0.94;
+    } else if (l.contains('kannada') || l.contains('ಕನ್ನಡ')) {
+      rateMul = 0.94;
+    } else if (l.contains('malayalam') || l.contains('മലയാളം')) {
+      rateMul = 0.92; // fastest-syllable-rate language — slow the most
+    } else if (l.contains('hindi') ||
+        l.contains('हिन्दी') ||
+        l.contains('हिंदी') ||
+        l.contains('marathi') ||
+        l.contains('मराठी') ||
+        l.contains('nepali') ||
+        l.contains('नेपाली')) {
+      rateMul = 0.97;
+      pitchAdd = 0.01;
+    } else if (l.contains('bengal') ||
+        l.contains('বাংলা') ||
+        l.contains('assam') ||
+        l.contains('অসমীয়া')) {
+      rateMul = 0.96;
+    } else if (l.contains('gujarati') ||
+        l.contains('ગુજરાતી') ||
+        l.contains('punjabi') ||
+        l.contains('ਪੰਜਾਬੀ') ||
+        l.contains('odia') ||
+        l.contains('oriya') ||
+        l.contains('ଓଡ଼ିଆ')) {
+      rateMul = 0.96;
+    } else if (l.contains('english')) {
+      rateMul = 1.0;
+      pitchAdd = 0.01;
+    }
+
+    // When we can only speak via the Romanized Indian-English companion,
+    // slow down noticeably: transliterated syllables need extra room to be clear.
+    if (_isUsingPhoneticFallback) {
+      rateMul = (rateMul * 0.90).clamp(0.80, 1.0);
+    }
+
+    _langRateMul = rateMul;
+    _langPitchAdd = pitchAdd;
   }
 
   /// Checks whether a voice supports the target language natively.
@@ -1124,6 +1273,44 @@ class VoiceEngine extends ChangeNotifier {
     final effectivePitch = pitch ?? _pitch;
     await _applyPitch(effectivePitch);
 
+    // ── Check if True Offline Neural Voice is available & ready ──
+    final isNeuralReady =
+        !kIsWeb && _neuralTts.isLanguageReady(targetLang, persona: _persona);
+
+    if (isNeuralReady) {
+      if (_isSpeaking) {
+        await stop();
+        await Future.delayed(const Duration(milliseconds: 40));
+      }
+
+      _isNeuralActive = true;
+      _currentUtterance = naturalText;
+      _isSpeaking = true;
+      notifyListeners();
+
+      final success = await _neuralTts.speak(
+        naturalText,
+        language: targetLang,
+        persona: _persona,
+        speed: (effectiveRate * _langRateMul).clamp(0.6, 1.6),
+        onDone: () {
+          _isSpeaking = false;
+          _isNeuralActive = false;
+          _currentUtterance = null;
+          final cb = _onDoneCallback;
+          _onDoneCallback = null;
+          notifyListeners();
+          cb?.call();
+        },
+      );
+
+      if (success) {
+        return;
+      }
+      // If neural synthesis failed, seamlessly fallback to flutter_tts
+      _isNeuralActive = false;
+    }
+
     try {
       // Clean buffer reset: stop previous utterance cleanly
       if (_isSpeaking) {
@@ -1133,6 +1320,7 @@ class VoiceEngine extends ChangeNotifier {
         await Future.delayed(const Duration(milliseconds: 50));
       }
 
+      _isNeuralActive = false;
       _currentUtterance = naturalText;
       _isSpeaking = true;
       notifyListeners();
@@ -1141,6 +1329,7 @@ class VoiceEngine extends ChangeNotifier {
     } catch (e) {
       debugPrint('VoiceEngine speak error: $e');
       _isSpeaking = false;
+      _isNeuralActive = false;
       _currentUtterance = null;
       _onDoneCallback = null;
       notifyListeners();
@@ -1150,10 +1339,12 @@ class VoiceEngine extends ChangeNotifier {
   /// Stop any ongoing speech playback cleanly
   Future<void> stop() async {
     _onDoneCallback = null;
+    await _neuralTts.stop();
     try {
       await _tts.stop();
     } catch (_) {}
     _isSpeaking = false;
+    _isNeuralActive = false;
     _currentUtterance = null;
     notifyListeners();
   }

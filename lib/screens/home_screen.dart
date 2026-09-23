@@ -8,7 +8,9 @@ import '../state/auth_session.dart';
 import '../state/auth_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_scale_button.dart';
+import '../theme/app_motion.dart';
 import '../widgets/breathing_orb.dart';
+import '../widgets/fx/fade_slide_in.dart';
 import '../widgets/language_selection_modal.dart';
 import '../widgets/offline_badge.dart';
 import '../widgets/section_title.dart';
@@ -264,15 +266,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // Hero Breathing Voice Saathi Card
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
-                child: _buildHeroVoiceCard(context),
+              child: FadeSlideIn(
+                delay: AppMotion.staggerDelay(1),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+                  child: _buildHeroVoiceCard(context),
+                ),
               ),
             ),
 
             // Mood Tracker Section
             SliverToBoxAdapter(
-              child: Padding(
+              child: FadeSlideIn(
+                delay: AppMotion.staggerDelay(2),
+                child: Padding(
                 padding: const EdgeInsets.fromLTRB(22, 8, 22, 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,12 +356,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
+                ),
               ),
             ),
 
             // Daily Routine Preview Section
             SliverToBoxAdapter(
-              child: Padding(
+              child: FadeSlideIn(
+                delay: AppMotion.staggerDelay(3),
+                child: Padding(
                 padding: const EdgeInsets.fromLTRB(22, 10, 22, 10),
                 child: SectionTitle(
                   title: 'Today\'s Routine',
@@ -367,17 +377,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
               ),
+              ),
             ),
             SliverToBoxAdapter(
-              child: Padding(
+              child: FadeSlideIn(
+                delay: AppMotion.staggerDelay(3),
+                child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: _buildRoutineSummaryCard(context),
+              ),
               ),
             ),
 
             // Today's Cherished Memory Spotlight
             SliverToBoxAdapter(
-              child: Padding(
+              child: FadeSlideIn(
+                delay: AppMotion.staggerDelay(4),
+                child: Padding(
                 padding: const EdgeInsets.fromLTRB(22, 22, 22, 10),
                 child: SectionTitle(
                   title: 'Memory of the Day',
@@ -390,17 +406,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
               ),
+              ),
             ),
             SliverToBoxAdapter(
-              child: Padding(
+              child: FadeSlideIn(
+                delay: AppMotion.staggerDelay(4),
+                child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: _buildMemorySpotlightCard(context),
+              ),
               ),
             ),
 
             // Quick Activities Section
             SliverToBoxAdapter(
-              child: Padding(
+              child: FadeSlideIn(
+                delay: AppMotion.staggerDelay(5),
+                child: Padding(
                 padding: const EdgeInsets.fromLTRB(22, 22, 22, 10),
                 child: SectionTitle(
                   title: 'Play & Remember',
@@ -413,11 +435,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
               ),
+              ),
             ),
             SliverToBoxAdapter(
-              child: Padding(
+              child: FadeSlideIn(
+                delay: AppMotion.staggerDelay(5),
+                child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
                 child: _buildActivityRow(context),
+              ),
               ),
             ),
           ],

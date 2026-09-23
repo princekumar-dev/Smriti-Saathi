@@ -3,8 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../navigation/app_shell.dart';
 import '../../state/auth_state.dart';
+import '../../theme/app_motion.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/animated_scale_button.dart';
+import '../../widgets/fx/fade_slide_in.dart';
 
 class PatientLoginScreen extends StatefulWidget {
   const PatientLoginScreen({super.key});
@@ -116,7 +118,9 @@ class _PatientLoginScreenState extends State<PatientLoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Welcome Header
-              Center(
+              FadeSlideIn(
+                delay: AppMotion.staggerDelay(0),
+                child: Center(
                 child: Container(
                   width: 92,
                   height: 92,
@@ -143,8 +147,11 @@ class _PatientLoginScreenState extends State<PatientLoginScreen> {
                   ),
                 ),
               ),
+              ),
               const SizedBox(height: 18),
-              Text(
+              FadeSlideIn(
+                delay: AppMotion.staggerDelay(1),
+                child: Text(
                 'Welcome to Saathi',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.playfairDisplay(
@@ -154,8 +161,11 @@ class _PatientLoginScreenState extends State<PatientLoginScreen> {
                   letterSpacing: -0.3,
                 ),
               ),
+              ),
               const SizedBox(height: 8),
-              Text(
+              FadeSlideIn(
+                delay: AppMotion.staggerDelay(2),
+                child: Text(
                 'Enter the code given by your family member,\nor tap your name below.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.dmSans(
@@ -164,6 +174,7 @@ class _PatientLoginScreenState extends State<PatientLoginScreen> {
                   color: AppTheme.muted,
                   height: 1.4,
                 ),
+              ),
               ),
 
               const SizedBox(height: 32),

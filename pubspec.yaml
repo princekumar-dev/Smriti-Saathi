@@ -32,8 +32,11 @@ dependencies:
   # Voice / speech
   speech_to_text: ^7.0.0
 
-  # Text to speech
+  # Text to speech & Offline Neural Voice
   flutter_tts: ^4.2.3
+  sherpa_onnx: ^1.10.37
+  audioplayers: ^6.1.0
+  archive: ^3.6.1
 
   # HTTP Client for Backend & MongoDB sync
   http: ^1.2.2
@@ -50,3 +53,174 @@ flutter:
   assets:
     - assets/images/
     - assets/audio/
+    - assets/fonts/
+
+  fonts:
+    - family: Comfortaa
+      fonts:
+        - asset: assets/fonts/Comfortaa-Regular.ttf
+        - asset: assets/fonts/Comfortaa-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Comfortaa-Bold.ttf
+          weight: 700
+
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans-Regular.ttf
+        - asset: assets/fonts/PlusJakartaSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/PlusJakartaSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/PlusJakartaSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/PlusJakartaSans-ExtraBold.ttf
+          weight: 800
+
+    - family: DMSans
+      fonts:
+        - asset: assets/fonts/DMSans-Regular.ttf
+        - asset: assets/fonts/DMSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/DMSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/DMSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/DMSans-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/DMSans-Black.ttf
+          weight: 900
+        - asset: assets/fonts/DMSans-Italic.ttf
+          style: italic
+
+    - family: PlayfairDisplay
+      fonts:
+        - asset: assets/fonts/PlayfairDisplay-Regular.ttf
+        - asset: assets/fonts/PlayfairDisplay-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/PlayfairDisplay-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/PlayfairDisplay-Black.ttf
+          weight: 900
+
+    - family: Caveat
+      fonts:
+        - asset: assets/fonts/Caveat-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Caveat-Bold.ttf
+          weight: 700
+
+    - family: Outfit
+      fonts:
+        - asset: assets/fonts/Outfit-Regular.ttf
+        - asset: assets/fonts/Outfit-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Outfit-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Outfit-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Outfit-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/Outfit-Black.ttf
+          weight: 900
+
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito-Regular.ttf
+        - asset: assets/fonts/Nunito-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Nunito-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Nunito-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/Nunito-Black.ttf
+          weight: 900
+
+    - family: Hind
+      fonts:
+        - asset: assets/fonts/Hind-Regular.ttf
+        - asset: assets/fonts/Hind-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Hind-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Hind-Bold.ttf
+          weight: 700
+
+    - family: HindSiliguri
+      fonts:
+        - asset: assets/fonts/HindSiliguri-Regular.ttf
+        - asset: assets/fonts/HindSiliguri-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/HindSiliguri-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/HindSiliguri-Bold.ttf
+          weight: 700
+
+    - family: NotoSansTamil
+      fonts:
+        - asset: assets/fonts/NotoSansTamil-Regular.ttf
+        - asset: assets/fonts/NotoSansTamil-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/NotoSansTamil-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/NotoSansTamil-Bold.ttf
+          weight: 700
+
+    - family: NotoSansTelugu
+      fonts:
+        - asset: assets/fonts/NotoSansTelugu-Regular.ttf
+        - asset: assets/fonts/NotoSansTelugu-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/NotoSansTelugu-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/NotoSansTelugu-Bold.ttf
+          weight: 700
+
+    - family: NotoSansKannada
+      fonts:
+        - asset: assets/fonts/NotoSansKannada-Regular.ttf
+        - asset: assets/fonts/NotoSansKannada-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/NotoSansKannada-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/NotoSansKannada-Bold.ttf
+          weight: 700
+
+    - family: NotoSansMalayalam
+      fonts:
+        - asset: assets/fonts/NotoSansMalayalam-Regular.ttf
+        - asset: assets/fonts/NotoSansMalayalam-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/NotoSansMalayalam-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/NotoSansMalayalam-Bold.ttf
+          weight: 700
+
+    - family: NotoSansGujarati
+      fonts:
+        - asset: assets/fonts/NotoSansGujarati-Regular.ttf
+        - asset: assets/fonts/NotoSansGujarati-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/NotoSansGujarati-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/NotoSansGujarati-Bold.ttf
+          weight: 700
+
+    - family: NotoSansGurmukhi
+      fonts:
+        - asset: assets/fonts/NotoSansGurmukhi-Regular.ttf
+        - asset: assets/fonts/NotoSansGurmukhi-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/NotoSansGurmukhi-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/NotoSansGurmukhi-Bold.ttf
+          weight: 700
+
+    - family: NotoSansOriya
+      fonts:
+        - asset: assets/fonts/NotoSansOriya-Regular.ttf
+        - asset: assets/fonts/NotoSansOriya-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/NotoSansOriya-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/NotoSansOriya-Bold.ttf
+          weight: 700

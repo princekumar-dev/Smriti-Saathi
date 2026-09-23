@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../data/app_translations.dart';
+import '../services/app_assets.dart';
 import '../state/app_settings.dart';
 import '../state/auth_state.dart';
 import '../theme/app_theme.dart';
@@ -9,6 +10,12 @@ import '../widgets/animated_scale_button.dart';
 import '../widgets/language_selection_modal.dart';
 import 'auth/caretaker_auth_screen.dart';
 
+/// ===============================================================
+/// ONBOARDING — Premium botanical, fully typographed experience
+/// Cohesive with the natural growth-rings splash: drifting leaves,
+/// breathing glass orb, ripple rings, and elegant typographic branding.
+/// Built entirely with Flutter's built-in animation (offline-first).
+/// ===============================================================
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -16,36 +23,74 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends State<OnboardingScreen>
+    with TickerProviderStateMixin {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+
+  late final AnimationController _ambient; // drifting leaves
+  late final AnimationController _breathe; // orb levitation
+  late final AnimationController _ripple; // expanding rings
+
   @override
   void initState() {
     super.initState();
+    _ambient = AnimationController(
+      duration: const Duration(seconds: 14),
+      vsync: this,
+    )..repeat();
+    _breathe = AnimationController(
+      duration: const Duration(milliseconds: 2400),
+      vsync: this,
+    )..repeat(reverse: true);
+    _ripple = AnimationController(
+      duration: const Duration(milliseconds: 3600),
+      vsync: this,
+    )..repeat();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    precacheImage(const AssetImage('assets/images/logo.png'), context).catchError((_) {});
   }
 
   @override
   void dispose() {
+    _ambient.dispose();
+    _breathe.dispose();
+    _ripple.dispose();
     _pageController.dispose();
     super.dispose();
   }
 
   void _openLanguageSelector({bool isDismissible = true}) {
-    LanguageSelectionModal.show(
-      context,
-      isDismissible: isDismissible,
-    );
+    LanguageSelectionModal.show(context, isDismissible: isDismissible);
   }
 
   void _nextPage(int totalPages) {
     if (_currentPage < totalPages - 1) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 450),
-        curve: Curves.easeOutCubic,
+        duration: const Duration(milliseconds: 380),
+        curve: Curves.fastOutSlowIn,
       );
     } else {
       _finishOnboarding();
     }
+  }
+
+  bool _isSkipping = false;
+
+  /// Fast-forwards straight to the last page with a single, buttery-smooth transition.
+  Future<void> _skipToLast(int totalPages) async {
+    if (_isSkipping) return;
+    _isSkipping = true;
+    await _pageController.animateToPage(
+      totalPages - 1,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.fastOutSlowIn,
+    );
+    _isSkipping = false;
   }
 
   void _finishOnboarding() async {
@@ -71,9 +116,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         title: translation.slides[0].title,
         motto: translation.slides[0].motto,
         description: translation.slides[0].description,
-        accent: AppTheme.sage,
-        badgeColor: AppTheme.forest,
-        gradientColors: const [Color(0xFFEEF6F1), Color(0xFFD5E7DB)],
+        accent: AppTheme.forest,
+        soft: const Color(0xFFEAF3EC),
         isFlagshipBrand: true,
         mottoBannerText: translation.mottoBanner,
         chips: [
@@ -88,9 +132,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         title: translation.slides[1].title,
         motto: translation.slides[1].motto,
         description: translation.slides[1].description,
-        accent: AppTheme.softGold,
-        badgeColor: AppTheme.warmAmber,
-        gradientColors: const [Color(0xFFFEF6E4), Color(0xFFF5E6C8)],
+        accent: AppTheme.warmAmber,
+        soft: const Color(0xFFFBF1DC),
         isFlagshipBrand: false,
         mottoBannerText: translation.mottoBanner,
         chips: [
@@ -105,9 +148,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         title: translation.slides[2].title,
         motto: translation.slides[2].motto,
         description: translation.slides[2].description,
-        accent: AppTheme.paleCoral,
-        badgeColor: AppTheme.coral,
-        gradientColors: const [Color(0xFFFDEBE6), Color(0xFFF4D4CC)],
+        accent: AppTheme.coral,
+        soft: const Color(0xFFFBE7E0),
         isFlagshipBrand: false,
         mottoBannerText: translation.mottoBanner,
         chips: [
@@ -122,9 +164,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         title: translation.slides[3].title,
         motto: translation.slides[3].motto,
         description: translation.slides[3].description,
-        accent: AppTheme.paleSage,
-        badgeColor: AppTheme.forest,
-        gradientColors: const [Color(0xFFEEF6F1), Color(0xFFD5E7DB)],
+        accent: AppTheme.emerald,
+        soft: const Color(0xFFE4F1EA),
         isFlagshipBrand: false,
         mottoBannerText: translation.mottoBanner,
         chips: [
@@ -135,563 +176,740 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       ),
     ];
 
+    final activeAccent = pages[_currentPage].accent;
+    final activeSoft = pages[_currentPage].soft;
     final isLastPage = _currentPage == pages.length - 1;
     final screenHeight = MediaQuery.of(context).size.height;
     final isSmallScreen = screenHeight < 700;
 
     return Scaffold(
       backgroundColor: AppTheme.cream,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top Navigation Bar with Brand + Language Pill + Skip
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-              child: Row(
-                children: [
-                  // Brand Logo & Name
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 34,
-                          height: 34,
-                          padding: const EdgeInsets.all(4.5),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppTheme.forest.withValues(alpha: 0.14),
-                              width: 1.3,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.forest.withValues(alpha: 0.06),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Image.asset(
-                            'assets/images/logo.png',
-                            fit: BoxFit.contain,
-                          ),
+      body: Stack(
+        children: [
+          // Ambient botanical backdrop — isolated in RepaintBoundary for 60fps compositing
+          Positioned.fill(
+            child: RepaintBoundary(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(0, -0.55),
+                    radius: 1.25,
+                    colors: [
+                      Colors.white,
+                      const Color(0xFFFBF8F1),
+                      Color.lerp(const Color(0xFFEEF5EA),
+                          activeSoft, 0.6)!,
+                      Color.lerp(const Color(0xFFE2EDE0),
+                          activeSoft, 0.5)!,
+                    ],
+                    stops: const [0.0, 0.4, 0.78, 1.0],
+                  ),
+                ),
+                child: AnimatedBuilder(
+                  animation: _ambient,
+                  builder: (context, _) {
+                    return CustomPaint(
+                      painter: _OnboardingLeavesPainter(
+                        progress: _ambient.value,
+                        accent: activeAccent,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+
+          SafeArea(
+            child: Column(
+              children: [
+                _buildTopBar(translation, settings, currentLang, pages.length),
+                _buildProgressBar(pages.length, activeAccent),
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    physics: const PageScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    itemCount: pages.length,
+                    onPageChanged: (index) =>
+                        setState(() => _currentPage = index),
+                    itemBuilder: (context, index) {
+                      return RepaintBoundary(
+                        child: _OnboardingPage(
+                          key: ValueKey('onboarding_page_$index'),
+                          data: pages[index],
+                          isSmallScreen: isSmallScreen,
+                          isEnglish: settings.language == 'English',
+                          language: settings.language,
+                          breathe: _breathe,
+                          ripple: _ripple,
                         ),
-                        const SizedBox(width: 7),
-                        Expanded(
-                          child: Text(
-                            'Smriti Saathi',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            softWrap: false,
-                            style: GoogleFonts.outfit(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFF184E77),
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                        ),
+                      );
+                    },
+                  ),
+                ),
+                _buildDots(pages.length, activeAccent),
+                _buildBottomActions(
+                    translation, settings, pages.length, isLastPage, activeAccent),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  // ── Top bar: typographed brand · language pill · skip ──
+  Widget _buildTopBar(dynamic translation, dynamic settings, dynamic currentLang,
+      int totalPages) {
+    final isLastPage = _currentPage == totalPages - 1;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
+      child: Row(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                // Logo in a gradient-ringed glass badge with soft glow.
+                Container(
+                  width: 42,
+                  height: 42,
+                  padding: const EdgeInsets.all(2.2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppTheme.emerald.withValues(alpha: 0.9),
+                        AppTheme.forest.withValues(alpha: 0.85),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
-
-                  // Language Switcher Pill
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(20),
-                      onTap: () => _openLanguageSelector(isDismissible: true),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 9, vertical: 5.5),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: const Color(0xFF184E77).withValues(alpha: 0.16),
-                            width: 1.1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF184E77).withValues(alpha: 0.04),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              currentLang.flag,
-                              style: const TextStyle(fontSize: 13),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              currentLang.nativeName,
-                              style: AppTranslations.getFont(
-                                settings.language,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 12,
-                                color: const Color(0xFF184E77),
-                              ),
-                            ),
-                            const SizedBox(width: 2),
-                            const Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              size: 15,
-                              color: Color(0xFF184E77),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-
-                  // Skip Button Pill
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(20),
-                      onTap: _finishOnboarding,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 11, vertical: 5.5),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: const Color(0xFF184E77).withValues(alpha: 0.14),
-                            width: 1.1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF184E77).withValues(alpha: 0.04),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              translation.skipButton,
-                              style: AppTranslations.getFont(
-                                settings.language,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
-                                color: const Color(0xFF184E77),
-                              ),
-                            ),
-                            const SizedBox(width: 2),
-                            const Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              size: 10,
-                              color: Color(0xFF184E77),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Segmented Progress Bar
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
-              child: Row(
-                children: List.generate(pages.length, (index) {
-                  final isCompleted = index < _currentPage;
-                  final isCurrent = index == _currentPage;
-                  return Expanded(
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 400),
-                      curve: Curves.easeOutCubic,
-                      margin: EdgeInsets.only(
-                        left: index == 0 ? 0 : 3.5,
-                        right: index == pages.length - 1 ? 0 : 3.5,
-                      ),
-                      height: 4.5,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(6),
-                        gradient: isCurrent ? AppTheme.emeraldGradient : null,
-                        color: isCompleted
-                            ? AppTheme.forest
-                            : isCurrent
-                                ? null
-                                : AppTheme.divider.withValues(alpha: 0.6),
-                        boxShadow: isCurrent
-                            ? [
-                                BoxShadow(
-                                  color:
-                                      AppTheme.forest.withValues(alpha: 0.35),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 1.5),
-                                ),
-                              ]
-                            : null,
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ),
-
-            // Carousel Pages
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: pages.length,
-                onPageChanged: (index) {
-                  setState(() => _currentPage = index);
-                },
-                itemBuilder: (context, index) {
-                  return _OnboardingPage(
-                    data: pages[index],
-                    isSmallScreen: isSmallScreen,
-                    isEnglish: settings.language == 'English',
-                    language: settings.language,
-                  );
-                },
-              ),
-            ),
-
-            // Animated Dot Indicators
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(pages.length, (index) {
-                  final isSelected = _currentPage == index;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 350),
-                    curve: Curves.easeOutCubic,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    height: 7,
-                    width: isSelected ? 30 : 7,
-                    decoration: BoxDecoration(
-                      gradient: isSelected ? AppTheme.emeraldGradient : null,
-                      color: isSelected ? null : AppTheme.divider,
-                      borderRadius: BorderRadius.circular(6),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color:
-                                    AppTheme.forest.withValues(alpha: 0.25),
-                                blurRadius: 6,
-                                offset: const Offset(0, 1),
-                              ),
-                            ]
-                          : null,
-                    ),
-                  );
-                }),
-              ),
-            ),
-
-            // Bottom Actions (Back & Continue / Get Started)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      if (_currentPage > 0) ...[
-                        Expanded(
-                          child: SizedBox(
-                            height: 56,
-                            child: OutlinedButton.icon(
-                              style: OutlinedButton.styleFrom(
-                                side: BorderSide(
-                                  color:
-                                      AppTheme.forest.withValues(alpha: 0.2),
-                                  width: 1.4,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                      AppTheme.radius18),
-                                ),
-                              ),
-                              onPressed: () => _pageController.previousPage(
-                                duration: const Duration(milliseconds: 350),
-                                curve: Curves.easeOutCubic,
-                              ),
-                              icon: const Icon(Icons.arrow_back_rounded,
-                                  size: 19),
-                              label: Text(
-                                translation.backButton,
-                                style: AppTranslations.getFont(
-                                  settings.language,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                      ],
-                      Expanded(
-                        flex: 2,
-                        child: SizedBox(
-                          height: 56,
-                          child: AnimatedScaleButton(
-                            onTap: () => _nextPage(pages.length),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: AppTheme.emeraldGradient,
-                                borderRadius: BorderRadius.circular(
-                                    AppTheme.radius18),
-                                boxShadow: AppTheme.buttonGlow,
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    isLastPage
-                                        ? translation.getStartedButton
-                                        : translation.continueButton,
-                                    style: AppTranslations.getFont(
-                                      settings.language,
-                                      color: Colors.white,
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 0.2,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Icon(
-                                    isLastPage
-                                        ? Icons.check_circle_rounded
-                                        : Icons.arrow_forward_rounded,
-                                    color: Colors.white,
-                                    size: 21,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.forest.withValues(alpha: 0.28),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    translation.footerTrust,
-                    textAlign: TextAlign.center,
-                    style: AppTranslations.getFont(
-                      settings.language,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.muted.withValues(alpha: 0.8),
-                      letterSpacing: 0.15,
+                  child: Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: AppAssets.logo(
+                      fit: BoxFit.contain,
+                      fallbackSize: 18,
                     ),
                   ),
+                ),
+                const SizedBox(width: 11),
+                // Two-tone typographed wordmark + micro tagline
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      RichText(
+                        overflow: TextOverflow.ellipsis,
+                        text: TextSpan(
+                          style: GoogleFonts.comfortaa(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.4,
+                          ),
+                          children: const [
+                            TextSpan(
+                              text: 'Smriti ',
+                              style: TextStyle(color: AppTheme.deepForest),
+                            ),
+                            TextSpan(
+                              text: 'Saathi',
+                              style: TextStyle(color: AppTheme.emerald),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.auto_awesome_rounded,
+                              size: 9,
+                              color: AppTheme.warmAmber.withValues(alpha: 0.9)),
+                          const SizedBox(width: 3),
+                          Text(
+                            'AI Companion',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.6,
+                              color: AppTheme.muted.withValues(alpha: 0.85),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          _pill(
+            highlighted: true,
+            onTap: () => _openLanguageSelector(isDismissible: true),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.emeraldGradient,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.language_rounded,
+                      size: 13, color: Colors.white),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  currentLang.nativeName,
+                  style: AppTranslations.getFont(
+                    settings.language,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12.5,
+                    color: AppTheme.deepForest,
+                  ),
+                ),
+                const SizedBox(width: 2),
+                const Icon(Icons.keyboard_arrow_down_rounded,
+                    size: 16, color: AppTheme.forest),
+              ],
+            ),
+          ),
+          const SizedBox(width: 7),
+          // "Skip" fast-forwards through the remaining pages to the last
+          // one. On the last page there's nothing to skip, so it hides.
+          if (!isLastPage)
+            _pill(
+              onTap: () => _skipToLast(totalPages),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    translation.skipButton,
+                    style: AppTranslations.getFont(
+                      settings.language,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12.5,
+                      color: AppTheme.muted,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.fast_forward_rounded,
+                      size: 14, color: AppTheme.muted),
                 ],
               ),
             ),
-          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _pill({
+    required VoidCallback onTap,
+    required Widget child,
+    bool highlighted = false,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: onTap,
+        child: Container(
+          padding: EdgeInsets.symmetric(
+              horizontal: highlighted ? 9 : 12, vertical: 6),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: highlighted
+                  ? [
+                      Colors.white,
+                      AppTheme.sage.withValues(alpha: 0.55),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.92),
+                      Colors.white.withValues(alpha: 0.82),
+                    ],
+            ),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: highlighted
+                  ? AppTheme.forest.withValues(alpha: 0.28)
+                  : AppTheme.forest.withValues(alpha: 0.14),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.forest
+                    .withValues(alpha: highlighted ? 0.14 : 0.06),
+                blurRadius: highlighted ? 12 : 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: child,
         ),
+      ),
+    );
+  }
+
+  // ── Segmented progress bar with 60fps hardware animation ──
+  Widget _buildProgressBar(int total, Color accent) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 2),
+      child: Row(
+        children: List.generate(total, (index) {
+          final isCompleted = index < _currentPage;
+          final isCurrent = index == _currentPage;
+          final isActive = isCompleted || isCurrent;
+          return Expanded(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 320),
+              curve: Curves.easeOutCubic,
+              margin: EdgeInsets.only(
+                left: index == 0 ? 0 : 3.5,
+                right: index == total - 1 ? 0 : 3.5,
+              ),
+              height: 6,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                gradient: isActive
+                    ? LinearGradient(
+                        colors: [
+                          accent,
+                          Color.lerp(accent, AppTheme.deepForest, 0.35)!,
+                        ],
+                      )
+                    : null,
+                color: isActive
+                    ? null
+                    : AppTheme.divider.withValues(alpha: 0.5),
+                boxShadow: isCurrent
+                    ? [
+                        BoxShadow(
+                          color: accent.withValues(alpha: 0.45),
+                          blurRadius: 8,
+                          offset: const Offset(0, 1.5),
+                        ),
+                      ]
+                    : null,
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  // ── Animated dots with 60fps hardware animation ──
+  Widget _buildDots(int total, Color accent) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10, top: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(total, (index) {
+          final isSelected = _currentPage == index;
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            height: 7,
+            width: isSelected ? 28 : 7,
+            decoration: BoxDecoration(
+              color: isSelected ? accent : AppTheme.divider,
+              borderRadius: BorderRadius.circular(6),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: accent.withValues(alpha: 0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 1),
+                      ),
+                    ]
+                  : null,
+            ),
+          );
+        }),
+      ),
+    );
+  }
+  // ── Bottom actions: back · continue/get-started · trust line ──
+  Widget _buildBottomActions(dynamic translation, dynamic settings, int total,
+      bool isLastPage, Color accent) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              if (_currentPage > 0) ...[
+                Expanded(
+                  child: SizedBox(
+                    height: 56,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.deepForest,
+                        backgroundColor: Colors.white.withValues(alpha: 0.7),
+                        side: BorderSide(
+                          color: AppTheme.forest.withValues(alpha: 0.2),
+                          width: 1.4,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radius18),
+                        ),
+                      ),
+                      onPressed: () => _pageController.previousPage(
+                        duration: const Duration(milliseconds: 380),
+                        curve: Curves.fastOutSlowIn,
+                      ),
+                      icon: const Icon(Icons.arrow_back_rounded, size: 19),
+                      label: Text(
+                        translation.backButton,
+                        style: AppTranslations.getFont(
+                          settings.language,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                flex: 2,
+                child: SizedBox(
+                  height: 56,
+                  child: AnimatedScaleButton(
+                    onTap: () => _nextPage(total),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeOutCubic,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            accent,
+                            Color.lerp(accent, AppTheme.deepForest, 0.28)!,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(AppTheme.radius18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: accent.withValues(alpha: 0.38),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            isLastPage
+                                ? translation.getStartedButton
+                                : translation.continueButton,
+                            style: AppTranslations.getFont(
+                              settings.language,
+                              color: Colors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            isLastPage
+                                ? Icons.check_circle_rounded
+                                : Icons.arrow_forward_rounded,
+                            color: Colors.white,
+                            size: 21,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.verified_user_rounded,
+                  size: 13, color: AppTheme.muted.withValues(alpha: 0.7)),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  translation.footerTrust,
+                  textAlign: TextAlign.center,
+                  style: AppTranslations.getFont(
+                    settings.language,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.muted.withValues(alpha: 0.8),
+                    letterSpacing: 0.15,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
+/// A single onboarding page — hardware-isolated breathing hero orb with ripple
+/// rings, typographed regional headline, handwritten motto, narrative body,
+/// and glassy feature chips. Pure 60fps rendering without widget rebuilds.
 class _OnboardingPage extends StatelessWidget {
   final _OnboardingData data;
   final bool isSmallScreen;
   final bool isEnglish;
   final String language;
+  final Animation<double> breathe;
+  final Animation<double> ripple;
 
   const _OnboardingPage({
+    super.key,
     required this.data,
-    this.isSmallScreen = false,
-    this.isEnglish = true,
+    required this.isSmallScreen,
+    required this.isEnglish,
     required this.language,
+    required this.breathe,
+    required this.ripple,
   });
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(24, 6, 24, 6),
+        physics: const ClampingScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(24, 4, 24, 6),
         child: Column(
           children: [
-            // Layered concentric luxury hero visual
             _buildHeroVisual(),
-            SizedBox(height: isSmallScreen ? 14 : 18),
-
-            // Category Label Pill
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-              decoration: BoxDecoration(
-                color: data.accent.withValues(alpha: 0.45),
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(
-                  color: data.badgeColor.withValues(alpha: 0.18),
-                  width: 1.1,
-                ),
-              ),
-              child: Text(
-                data.label,
-                style: AppTranslations.getFont(
-                  language,
-                  fontSize: 11.5,
-                  letterSpacing: 1.1,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.forest,
-                ),
-              ),
-            ),
-            SizedBox(height: isSmallScreen ? 8 : 12),
-
-            // Hero Headline with Dedicated Regional Script Typography
-            Text(
-              data.title,
-              textAlign: TextAlign.center,
-              style: AppTranslations.getFont(
-                language,
-                fontSize: isSmallScreen
-                    ? (data.isFlagshipBrand ? 32 : 25)
-                    : (data.isFlagshipBrand ? 36 : 28),
-                fontWeight: FontWeight.w900,
-                height: 1.15,
-                color: const Color(0xFF184E77),
-                letterSpacing: -0.3,
-              ),
-            ),
-            SizedBox(height: isSmallScreen ? 5 : 7),
-
-            // Subtitle
-            Text(
-              data.subtitle,
-              textAlign: TextAlign.center,
-              style: AppTranslations.getFont(
-                language,
-                fontSize: data.isFlagshipBrand ? 15 : 14,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.forest,
-                letterSpacing: 0.15,
-                height: 1.3,
-              ),
-            ),
-            SizedBox(height: isSmallScreen ? 10 : 14),
-
-            // Authentic Motto Banner
-            _buildMottoBanner(),
-            SizedBox(height: isSmallScreen ? 10 : 14),
-
-            // Narrative Description
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Text(
-                data.description,
-                textAlign: TextAlign.center,
-                style: AppTranslations.getFont(
-                  language,
-                  color: AppTheme.muted,
-                  fontSize: isSmallScreen ? 14 : 15,
-                  fontWeight: FontWeight.w500,
-                  height: 1.48,
-                ),
-              ),
-            ),
+            SizedBox(height: isSmallScreen ? 20 : 28),
+            _buildTitle(),
             SizedBox(height: isSmallScreen ? 12 : 16),
-
-            // Feature Highlights Chips
+            _buildGlassStory(),
+            SizedBox(height: isSmallScreen ? 18 : 24),
             _buildFeatureTags(),
+            if (data.isFlagshipBrand) ...[
+              SizedBox(height: isSmallScreen ? 16 : 20),
+              _buildMottoBanner(),
+            ],
           ],
         ),
       ),
     );
   }
 
+  // ── Breathing glass orb + dual ripple rings (isolated for 60fps) ──
   Widget _buildHeroVisual() {
-    final haloSize = isSmallScreen ? 144.0 : 164.0;
-    final middleSize = isSmallScreen ? 116.0 : 132.0;
-    final badgeSize = isSmallScreen ? 88.0 : 100.0;
+    final orbSize = isSmallScreen ? 104.0 : 120.0;
+    final ringSize = isSmallScreen ? 150.0 : 172.0;
 
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // Outer soft ambient ring
-        Container(
-          width: haloSize,
-          height: haloSize,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: data.accent.withValues(alpha: 0.35),
-          ),
-        ),
-        // Middle glowing ring
-        Container(
-          width: middleSize,
-          height: middleSize,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                data.accent.withValues(alpha: 0.7),
-                data.badgeColor.withValues(alpha: 0.15),
-              ],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: data.badgeColor.withValues(alpha: 0.14),
-                blurRadius: 28,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-        ),
-        // Inner elevated white card badge
-        Container(
-          width: badgeSize,
-          height: badgeSize,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white,
-            border: Border.all(
-              color: data.badgeColor.withValues(alpha: 0.18),
-              width: 2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.deepForest.withValues(alpha: 0.08),
-                blurRadius: 18,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: data.isFlagshipBrand
-              ? Padding(
-                  padding: EdgeInsets.all(isSmallScreen ? 14 : 16),
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => Icon(
-                      data.icon,
-                      size: isSmallScreen ? 38 : 44,
-                      color: AppTheme.forest,
+    return RepaintBoundary(
+      child: SizedBox(
+        width: ringSize + 20,
+        height: ringSize + 20,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            AnimatedBuilder(
+              animation: ripple,
+              builder: (context, _) {
+                final v = ripple.value;
+                return Transform.scale(
+                  scale: 0.62 + v * 0.7,
+                  child: Container(
+                    width: ringSize,
+                    height: ringSize,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: data.accent
+                            .withValues(alpha: (1.0 - v).clamp(0.0, 0.55) * 0.5),
+                        width: 1.5,
+                      ),
                     ),
                   ),
-                )
-              : Icon(
-                  data.icon,
-                  size: isSmallScreen ? 40 : 48,
-                  color: data.badgeColor,
+                );
+              },
+            ),
+            AnimatedBuilder(
+              animation: ripple,
+              builder: (context, _) {
+                final v = (ripple.value + 0.5) % 1.0;
+                return Transform.scale(
+                  scale: 0.62 + v * 0.7,
+                  child: Container(
+                    width: ringSize,
+                    height: ringSize,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFD4A373)
+                            .withValues(alpha: (1.0 - v).clamp(0.0, 0.5) * 0.5),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            Container(
+              width: ringSize * 0.82,
+              height: ringSize * 0.82,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: data.soft.withValues(alpha: 0.7),
+              ),
+            ),
+            AnimatedBuilder(
+              animation: breathe,
+              builder: (context, child) {
+                final b = breathe.value;
+                return Transform.translate(
+                  offset: Offset(0, -5 * b),
+                  child: Transform.scale(scale: 1.0 + 0.03 * b, child: child),
+                );
+              },
+              child: Container(
+                width: orbSize,
+                height: orbSize,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const RadialGradient(
+                    center: Alignment(-0.35, -0.35),
+                    radius: 0.95,
+                    colors: [Colors.white, Color(0xFFF6FAF4), Color(0xFFEDF4EA)],
+                  ),
+                  border: Border.all(
+                    color: data.accent.withValues(alpha: 0.18),
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: data.accent.withValues(alpha: 0.22),
+                      blurRadius: 30,
+                      offset: const Offset(0, 14),
+                    ),
+                    BoxShadow(
+                      color: AppTheme.deepForest.withValues(alpha: 0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
+                child: data.isFlagshipBrand
+                    ? Padding(
+                        padding: EdgeInsets.all(isSmallScreen ? 20 : 24),
+                        child: AppAssets.logo(
+                          fit: BoxFit.contain,
+                          fallback: Icon(
+                            data.icon,
+                            size: isSmallScreen ? 40 : 46,
+                            color: data.accent,
+                          ),
+                        ),
+                      )
+                    : Icon(
+                        data.icon,
+                        size: isSmallScreen ? 42 : 50,
+                        color: data.accent,
+                      ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildTitle() {
+    return Text(
+      data.title,
+      textAlign: TextAlign.center,
+      style: AppTranslations.getFont(
+        language,
+        fontSize: isSmallScreen
+            ? (data.isFlagshipBrand ? 33 : 27)
+            : (data.isFlagshipBrand ? 38 : 30),
+        fontWeight: FontWeight.w900,
+        height: 1.12,
+        color: AppTheme.deepForest,
+        letterSpacing: -0.4,
+      ),
+    );
+  }
+
+  // ── Frosted-glass narrative card: hardware-accelerated, zero shader stall ──
+  Widget _buildGlassStory() {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: 18,
+        vertical: isSmallScreen ? 12 : 14,
+      ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withValues(alpha: 0.92),
+            Colors.white.withValues(alpha: 0.78),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: data.accent.withValues(alpha: 0.25),
+          width: 1.3,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: data.accent.withValues(alpha: 0.12),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: AppTheme.deepForest.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Text(
+        data.motto,
+        textAlign: TextAlign.center,
+        style: AppTranslations.getFont(
+          language,
+          fontSize: data.isFlagshipBrand ? 15.5 : 14.5,
+          fontWeight: FontWeight.w800,
+          color: Color.lerp(
+              data.accent, AppTheme.deepForest, 0.15),
+          letterSpacing: 0.1,
+          height: 1.3,
+        ),
+      ),
     );
   }
 
@@ -699,49 +917,43 @@ class _OnboardingPage extends StatelessWidget {
     return FittedBox(
       fit: BoxFit.scaleDown,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
+          color: Colors.white.withValues(alpha: 0.8),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: const Color(0xFF184E77).withValues(alpha: 0.15),
+            color: AppTheme.forest.withValues(alpha: 0.16),
             width: 1.2,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF184E77).withValues(alpha: 0.05),
-              blurRadius: 12,
-              offset: const Offset(0, 3),
+              color: AppTheme.forest.withValues(alpha: 0.06),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
               data.mottoBannerText,
               style: isEnglish
                   ? GoogleFonts.caveat(
-                      fontSize: isSmallScreen ? 18 : 21,
+                      fontSize: isSmallScreen ? 20 : 23,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF184E77),
+                      color: AppTheme.deepForest,
                       letterSpacing: 0.2,
                     )
                   : AppTranslations.getFont(
                       language,
                       fontSize: isSmallScreen ? 14 : 15.5,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF184E77),
-                      letterSpacing: 0.1,
+                      color: AppTheme.deepForest,
                     ),
             ),
-            const SizedBox(width: 6),
-            const Icon(
-              Icons.favorite_border_rounded,
-              size: 18,
-              color: Color(0xFF184E77),
-            ),
+            const SizedBox(width: 7),
+            Icon(Icons.favorite_rounded, size: 16, color: data.accent),
           ],
         ),
       ),
@@ -755,17 +967,17 @@ class _OnboardingPage extends StatelessWidget {
       alignment: WrapAlignment.center,
       children: data.chips.map((chip) {
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Colors.white.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(AppTheme.radiusFull),
             border: Border.all(
-              color: data.badgeColor.withValues(alpha: 0.16),
+              color: data.accent.withValues(alpha: 0.2),
               width: 1.1,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.deepForest.withValues(alpha: 0.03),
+                color: AppTheme.deepForest.withValues(alpha: 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -774,12 +986,8 @@ class _OnboardingPage extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                chip.icon,
-                size: 14,
-                color: data.badgeColor,
-              ),
-              const SizedBox(width: 5.5),
+              Icon(chip.icon, size: 14, color: data.accent),
+              const SizedBox(width: 6),
               Text(
                 chip.text,
                 style: AppTranslations.getFont(
@@ -805,8 +1013,7 @@ class _OnboardingData {
   final String motto;
   final String description;
   final Color accent;
-  final Color badgeColor;
-  final List<Color> gradientColors;
+  final Color soft;
   final bool isFlagshipBrand;
   final String mottoBannerText;
   final List<({IconData icon, String text})> chips;
@@ -818,12 +1025,84 @@ class _OnboardingData {
     required this.motto,
     required this.description,
     required this.accent,
-    required this.badgeColor,
-    required this.gradientColors,
+    required this.soft,
     required this.isFlagshipBrand,
     required this.mottoBannerText,
     required this.chips,
   });
 
   String get subtitle => motto;
+}
+
+/// Gentle drifting leaves behind the onboarding pages — mirrors the
+/// splash's botanical motion, tinted subtly toward the active accent.
+class _OnboardingLeavesPainter extends CustomPainter {
+  final double progress;
+  final Color accent;
+
+  _OnboardingLeavesPainter({required this.progress, required this.accent});
+
+  static final List<_Leaf> _leaves = List.generate(9, (i) {
+    return _Leaf(
+      xRatio: ((i * 47) % 100) / 100.0,
+      yOffset: ((i * 67) % 100) / 100.0,
+      size: 12.0 + (i % 3) * 3.0,
+      speed: 0.32 + (i % 3) * 0.12,
+      swayAmp: 12.0 + (i % 3) * 7.0,
+      opacity: 0.12 + (i % 3) * 0.06,
+      useAccent: i % 2 == 0,
+    );
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..style = PaintingStyle.fill;
+    const green = Color(0xFF52B788);
+
+    for (final leaf in _leaves) {
+      final totalY = size.height + 60;
+      final y = ((progress * leaf.speed + leaf.yOffset) % 1.0) * totalY - 30;
+      final sway = leaf.swayAmp * (leaf.xRatio > 0.5 ? 1 : -1);
+      final x = ((leaf.xRatio * size.width) + sway * (progress * 1.5)) %
+          size.width;
+
+      paint.color =
+          (leaf.useAccent ? accent : green).withValues(alpha: leaf.opacity);
+
+      canvas.save();
+      canvas.translate(x < 0 ? x + size.width : x, y);
+      canvas.rotate(progress * 2.2 + leaf.yOffset * 6.28);
+      final s = leaf.size;
+      final path = Path()
+        ..moveTo(0, -s)
+        ..quadraticBezierTo(s * 0.55, -s * 0.15, 0, s)
+        ..quadraticBezierTo(-s * 0.55, -s * 0.15, 0, -s);
+      canvas.drawPath(path, paint);
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _OnboardingLeavesPainter old) =>
+      old.progress != progress || old.accent != accent;
+}
+
+class _Leaf {
+  final double xRatio;
+  final double yOffset;
+  final double size;
+  final double speed;
+  final double swayAmp;
+  final double opacity;
+  final bool useAccent;
+
+  const _Leaf({
+    required this.xRatio,
+    required this.yOffset,
+    required this.size,
+    required this.speed,
+    required this.swayAmp,
+    required this.opacity,
+    required this.useAccent,
+  });
 }

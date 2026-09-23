@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../services/app_assets.dart';
+import '../../theme/app_motion.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/animated_scale_button.dart';
+import '../../widgets/fx/fade_slide_in.dart';
 import '../onboarding_screen.dart';
 import 'caretaker_auth_screen.dart';
 import 'patient_login_screen.dart';
@@ -23,7 +26,9 @@ class RoleSelectionScreen extends StatelessWidget {
             children: [
               const SizedBox(height: 12),
               // Premium Brand Emblem
-              Center(
+              FadeSlideIn(
+                delay: AppMotion.staggerDelay(0),
+                child: Center(
                 child: Container(
                   width: 96,
                   height: 96,
@@ -37,19 +42,17 @@ class RoleSelectionScreen extends StatelessWidget {
                       width: 2,
                     ),
                   ),
-                  child: Image.asset(
-                    'assets/images/logo.png',
+                  child: AppAssets.logo(
                     fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.favorite_rounded,
-                      color: AppTheme.forest,
-                      size: 48,
-                    ),
+                    fallbackSize: 48,
                   ),
                 ),
               ),
+              ),
               const SizedBox(height: 22),
-              Text(
+              FadeSlideIn(
+                delay: AppMotion.staggerDelay(1),
+                child: Text(
                 'Smriti Saathi',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.playfairDisplay(
@@ -60,8 +63,11 @@ class RoleSelectionScreen extends StatelessWidget {
                   height: 1.1,
                 ),
               ),
+              ),
               const SizedBox(height: 8),
-              Text(
+              FadeSlideIn(
+                delay: AppMotion.staggerDelay(2),
+                child: Text(
                 'Loving memory companion & daily wellbeing\nfor elderly family members',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.dmSans(
@@ -70,6 +76,7 @@ class RoleSelectionScreen extends StatelessWidget {
                   color: AppTheme.muted,
                   height: 1.45,
                 ),
+              ),
               ),
               const SizedBox(height: 36),
               Text(
@@ -83,7 +90,9 @@ class RoleSelectionScreen extends StatelessWidget {
               const SizedBox(height: 16),
 
               // Option 1: Caretaker / Family
-              _RoleCard(
+              FadeSlideIn(
+                delay: AppMotion.staggerDelay(3),
+                child: _RoleCard(
                 icon: Icons.health_and_safety_rounded,
                 badge: 'FAMILY & CAREGIVERS',
                 badgeColor: AppTheme.sage,
@@ -101,11 +110,14 @@ class RoleSelectionScreen extends StatelessWidget {
                   );
                 },
               ),
+              ),
 
               const SizedBox(height: 18),
 
               // Option 2: Elderly Companion
-              _RoleCard(
+              FadeSlideIn(
+                delay: AppMotion.staggerDelay(4),
+                child: _RoleCard(
                 icon: Icons.person_pin_rounded,
                 badge: 'SENIOR COMPANION',
                 badgeColor: AppTheme.paleCoral,
@@ -122,6 +134,7 @@ class RoleSelectionScreen extends StatelessWidget {
                     ),
                   );
                 },
+              ),
               ),
 
               const SizedBox(height: 16),
