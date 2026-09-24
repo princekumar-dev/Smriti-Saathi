@@ -8,7 +8,7 @@ import '../state/auth_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_scale_button.dart';
 import '../widgets/language_selection_modal.dart';
-import 'auth/caretaker_auth_screen.dart';
+import 'auth/role_selection_screen.dart';
 
 /// ===============================================================
 /// ONBOARDING — Premium botanical, fully typographed experience
@@ -98,7 +98,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     await auth.completeOnboarding();
     if (mounted) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const CaretakerAuthScreen()),
+        MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
       );
     }
   }

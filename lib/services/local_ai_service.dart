@@ -1,10 +1,8 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 
 import '../data/app_translations.dart';
-import 'local_model_manager.dart';
+import 'ai/ai_model_provider.dart';
 import 'rag_service.dart';
 
 class LocalAiService {
@@ -14,7 +12,14 @@ class LocalAiService {
 
   static LocalAiService get instance => _instance;
 
-  final LocalModelManager _modelManager = LocalModelManager();
+  /// Ordered chain of pluggable model providers (§22). Online server model is
+  /// tried first, then on-device; if neither answers we fall back to the
+  /// multilingual heuristic. Later, a real on-device runtime only has to make
+  /// [OfflineAIProvider.complete] return text — nothing else changes.
+  final List<AIModelProvider> _providers = [
+    OnlineAIProvider(),
+    OfflineAIProvider(),
+  ];
 
   /// Build a compassionate ChatML prompt optimized for Qwen 2.5
   String buildChatMLPrompt({
@@ -52,7 +57,8 @@ $query
 ''';
   }
 
-  /// Generate an AI response using the local model or backend/local fallback
+  /// Generate an AI response through the provider chain, falling back to the
+  /// offline multilingual heuristic when no model answers.
   Future<String> generateReply({
     required String query,
     required String language,
@@ -61,7 +67,7 @@ $query
     final cleanQuery = query.trim();
     if (cleanQuery.isEmpty) return '';
 
-    // RAG: Retrieve personalized memories, routines, and patient facts
+    // RAG: Retrieve personalized memories, routines, patient facts + graph.
     String ragContext = '';
     try {
       ragContext = await RagService.instance.retrieveContext(
@@ -70,67 +76,38 @@ $query
       );
     } catch (_) {}
 
-    // 1. If on Web or running in local dev, query our backend AI bridge with RAG context
-    try {
-      final backendResponse = await _queryBackendAi(
-        query: cleanQuery,
-        language: language,
-        userName: userName,
-        ragContext: ragContext,
-      );
-      if (backendResponse != null && backendResponse.isNotEmpty) {
-        return backendResponse;
+    final prompt = buildChatMLPrompt(
+      query: cleanQuery,
+      language: language,
+      userName: userName,
+      ragContext: ragContext,
+    );
+    final req = AiRequest(
+      query: cleanQuery,
+      language: language,
+      userName: userName,
+      ragContext: ragContext,
+      prompt: prompt,
+    );
+
+    // Try each pluggable provider in order; first non-empty reply wins.
+    for (final provider in _providers) {
+      try {
+        if (!await provider.isAvailable()) continue;
+        final reply = await provider.complete(req);
+        if (reply != null && reply.isNotEmpty) return reply;
+      } catch (e) {
+        debugPrint('[LocalAiService] provider ${provider.id} failed: $e');
       }
-    } catch (_) {
-      // Backend not running or offline, proceed to on-device / local fallback
     }
 
-    // 2. If on mobile and model is ready
-    if (!kIsWeb && _modelManager.isModelReady) {
-      final modelPath = await _modelManager.getModelFilePath();
-      if (modelPath != null) {
-        debugPrint('[LocalAiService] Running on-device Qwen inference at: $modelPath');
-      }
-    }
-
-    // 3. Compassionate offline conversational fallback (Zero network required)
+    // Compassionate offline conversational fallback (zero network required).
     return _generateOfflineFallback(
       query: cleanQuery,
       language: language,
       userName: userName,
       ragContext: ragContext,
     );
-  }
-
-  /// Query local Node.js backend bridge (POST /api/ai/chat)
-  Future<String?> _queryBackendAi({
-    required String query,
-    required String language,
-    String userName = '',
-    String ragContext = '',
-  }) async {
-    final url = Uri.parse('http://localhost:5000/api/ai/chat');
-    final response = await http
-        .post(
-          url,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'query': query,
-            'language': language,
-            'userName': userName,
-            'model': _modelManager.selectedVariant.id,
-            'ragContext': ragContext,
-          }),
-        )
-        .timeout(const Duration(seconds: 7));
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data is Map && data['reply'] is String) {
-        return data['reply'].toString().trim();
-      }
-    }
-    return null;
   }
 
   /// Smart multilingual offline fallback engine covering North-Eastern and Indic languages

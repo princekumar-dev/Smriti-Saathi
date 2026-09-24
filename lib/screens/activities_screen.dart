@@ -1,12 +1,90 @@
 import 'package:flutter/material.dart';
 
+import '../data/repositories/game_score_repository.dart';
+import '../services/memory_game_engine.dart';
+import '../services/memory_graph_service.dart';
+import '../state/auth_state.dart';
 import '../theme/app_motion.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fx/fade_slide_in.dart';
 import '../widgets/screen_header.dart';
+import 'games/memory_quiz_screen.dart';
 
-class ActivitiesScreen extends StatelessWidget {
+/// Play & activities — personalised memory games built from the user's own
+/// memory graph (§14–15), never generic trivia. Each card launches a gentle
+/// round of [MemoryQuizScreen] and shows how it went last time.
+class ActivitiesScreen extends StatefulWidget {
   const ActivitiesScreen({super.key});
+
+  @override
+  State<ActivitiesScreen> createState() => _ActivitiesScreenState();
+}
+
+class _ActivitiesScreenState extends State<ActivitiesScreen> {
+  String? _patientId;
+  bool _ready = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bind());
+  }
+
+  void _bind() {
+    final auth = AuthScope.of(context);
+    _patientId = auth.activePatient?.id;
+    MemoryGraphService().bindPatient(_patientId);
+    setState(() => _ready = true);
+  }
+
+  static const _games = <_GameDef>[
+    _GameDef(
+      gameId: 'quiz_who_is_this',
+      title: 'Who is this?',
+      description: 'Recognise the people you love',
+      icon: Icons.face_retouching_natural_rounded,
+      color: AppTheme.sage,
+      kind: GameQuestionKind.whoIsThis,
+    ),
+    _GameDef(
+      gameId: 'quiz_relation',
+      title: 'Family & friends',
+      description: 'Who is who in your life',
+      icon: Icons.diversity_1_rounded,
+      color: AppTheme.paleTerracotta,
+      kind: GameQuestionKind.relationOf,
+    ),
+    _GameDef(
+      gameId: 'quiz_who_was_with',
+      title: 'Who was there?',
+      description: 'Remember happy moments together',
+      icon: Icons.groups_rounded,
+      color: AppTheme.lavender,
+      kind: GameQuestionKind.whoWasWith,
+    ),
+    _GameDef(
+      gameId: 'quiz_mixed',
+      title: 'A little of everything',
+      description: 'A gentle mix, made just for you',
+      icon: Icons.auto_awesome_rounded,
+      color: AppTheme.sand,
+      kind: null,
+    ),
+  ];
+
+  Future<void> _play(_GameDef g) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MemoryQuizScreen(
+          title: g.title,
+          gameId: g.gameId,
+          kind: g.kind,
+        ),
+      ),
+    );
+    if (mounted) setState(() {}); // refresh stats on return
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +98,7 @@ class ActivitiesScreen extends StatelessWidget {
             SliverToBoxAdapter(
               child: ScreenHeader(
                 title: 'Play & activities',
-                subtitle: 'Choose something you enjoy',
+                subtitle: 'Games made from your own memories',
                 icon: canPop ? null : Icons.extension_rounded,
                 showBack: canPop,
               ),
@@ -29,67 +107,33 @@ class ActivitiesScreen extends StatelessWidget {
               child: FadeSlideIn(
                 delay: AppMotion.staggerDelay(0),
                 child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: HeroBanner(
-                  title: 'Keep your mind active',
-                  subtitle: 'Small activities can make every day more enjoyable.',
-                  icon: Icons.lightbulb_rounded,
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: HeroBanner(
+                    title: 'Keep your mind active',
+                    subtitle:
+                        'These little games remember the people and places '
+                        'from your life. No timer, no pressure.',
+                    icon: Icons.lightbulb_rounded,
+                  ),
                 ),
-              ),
               ),
             ),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 22, 20, 30),
               sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  FadeSlideIn(
-                    delay: AppMotion.staggerDelay(1),
-                    child: _activityCard(
-                    context,
-                    icon: Icons.psychology_rounded,
-                    title: 'Memory Match',
-                    description: 'Match familiar things',
-                    duration: '5 minutes',
-                    color: AppTheme.sage,
-                  ),
-                  ),
-                  const SizedBox(height: 12),
-                  FadeSlideIn(
-                    delay: AppMotion.staggerDelay(2),
-                    child: _activityCard(
-                    context,
-                    icon: Icons.record_voice_over_rounded,
-                    title: 'Remember & Tell',
-                    description: 'Talk about a memory',
-                    duration: '10 minutes',
-                    color: AppTheme.paleTerracotta,
-                  ),
-                  ),
-                  const SizedBox(height: 12),
-                  FadeSlideIn(
-                    delay: AppMotion.staggerDelay(3),
-                    child: _activityCard(
-                    context,
-                    icon: Icons.music_note_rounded,
-                    title: 'Familiar Music',
-                    description: 'Listen and remember',
-                    duration: '10 minutes',
-                    color: AppTheme.lavender,
-                  ),
-                  ),
-                  const SizedBox(height: 12),
-                  FadeSlideIn(
-                    delay: AppMotion.staggerDelay(4),
-                    child: _activityCard(
-                    context,
-                    icon: Icons.menu_book_rounded,
-                    title: 'Finish the Story',
-                    description: 'Complete a simple story',
-                    duration: '5 minutes',
-                    color: AppTheme.sand,
-                  ),
-                  ),
-                ]),
+                delegate: SliverChildBuilderDelegate(
+                  (context, i) {
+                    final g = _games[i];
+                    return Padding(
+                      padding: EdgeInsets.only(top: i == 0 ? 0 : 12),
+                      child: FadeSlideIn(
+                        delay: AppMotion.staggerDelay(i + 1),
+                        child: _gameCard(g),
+                      ),
+                    );
+                  },
+                  childCount: _games.length,
+                ),
               ),
             ),
           ],
@@ -98,19 +142,16 @@ class ActivitiesScreen extends StatelessWidget {
     );
   }
 
-  Widget _activityCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String description,
-    required String duration,
-    required Color color,
-  }) {
+  Widget _gameCard(_GameDef g) {
+    final repo = GameScoreRepository();
+    final played = _ready ? repo.timesPlayed(g.gameId, patientId: _patientId) : 0;
+    final best = _ready ? repo.bestScore(g.gameId, patientId: _patientId) : 0;
+
     return Material(
-      color: color,
+      color: g.color,
       borderRadius: BorderRadius.circular(24),
       child: InkWell(
-        onTap: () => _openActivity(context, title),
+        onTap: () => _play(g),
         borderRadius: BorderRadius.circular(24),
         child: Padding(
           padding: const EdgeInsets.all(18),
@@ -123,21 +164,25 @@ class ActivitiesScreen extends StatelessWidget {
                   color: AppTheme.paper,
                   borderRadius: BorderRadius.circular(18),
                 ),
-                child: Icon(icon, size: 32, color: AppTheme.forest),
+                child: Icon(g.icon, size: 32, color: AppTheme.forest),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: Theme.of(context).textTheme.titleMedium),
+                    Text(g.title,
+                        style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 4),
-                    Text(description, style: Theme.of(context).textTheme.bodyMedium),
+                    Text(g.description,
+                        style: Theme.of(context).textTheme.bodyMedium),
                     const SizedBox(height: 8),
                     Text(
-                      duration,
+                      played == 0
+                          ? 'Tap to play'
+                          : 'Best $best · played $played time${played == 1 ? '' : 's'}',
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w800,
                         color: AppTheme.forest,
                       ),
@@ -146,7 +191,7 @@ class ActivitiesScreen extends StatelessWidget {
                 ),
               ),
               const Text(
-                'Start',
+                'Play',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -159,48 +204,22 @@ class ActivitiesScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  void _openActivity(BuildContext context, String title) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(24, 10, 24, 36),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.psychology_rounded, size: 48, color: AppTheme.forest),
-              const SizedBox(height: 15),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'This activity is calm and unhurried. Take your time.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppTheme.muted,
-                    ),
-              ),
-              const SizedBox(height: 22),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Starting $title')),
-                    );
-                  },
-                  child: const Text('Start activity'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+class _GameDef {
+  final String gameId;
+  final String title;
+  final String description;
+  final IconData icon;
+  final Color color;
+  final GameQuestionKind? kind;
+
+  const _GameDef({
+    required this.gameId,
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.color,
+    required this.kind,
+  });
 }

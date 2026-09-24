@@ -23,6 +23,13 @@ dependencies:
   shared_preferences: ^2.5.3
   path_provider: ^2.1.5
 
+  # Offline-first local database (maintained Hive fork; Android + web/IndexedDB)
+  hive_ce: ^2.11.3
+  hive_ce_flutter: ^2.3.1
+
+  # Local gallery / camera image selection for memories
+  image_picker: ^1.1.2
+
   # Permissions
   permission_handler: ^12.0.1
 
@@ -46,6 +53,43 @@ dev_dependencies:
     sdk: flutter
 
   flutter_lints: ^5.0.0
+
+  # Branded native launch splash (replaces default white/Flutter-logo screen
+  # shown by the OS before Dart's first frame, incl. Android 12+ splash API)
+  flutter_native_splash: ^2.4.3
+
+  # Branded app launcher icon (Android 12+ shows this icon on the system splash)
+  flutter_launcher_icons: ^0.14.1
+
+# ── Branded native launch splash ──
+# Warm cream base (#FDFBF4) matching the Dart PremiumSplashScreen + web splash,
+# with the Smriti Saathi logo centered. Web is excluded — index.html already
+# renders its own rich HTML splash.
+flutter_native_splash:
+  color: "#FDFBF4"
+  # Pre-padded transparent foreground so the mark sits inside the OS's circular
+  # splash mask (Android 12+) and never gets clipped — same safe-zone art used
+  # for the adaptive launcher icon.
+  image: assets/images/logo_adaptive_fg.png
+  android: true
+  ios: false
+  web: false
+  android_12:
+    color: "#FDFBF4"
+    image: assets/images/logo_adaptive_fg.png
+    icon_background_color: "#FDFBF4"
+
+# ── Branded app launcher icon ──
+# Foreground art is pre-padded into the adaptive-icon safe zone (see
+# assets/images/logo_adaptive_fg.png) so the head/heart mark is never clipped
+# when the launcher masks it to a circle, squircle or rounded rectangle.
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/logo_icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#FDFBF4"
+  adaptive_icon_foreground: "assets/images/logo_adaptive_fg.png"
 
 flutter:
   uses-material-design: true

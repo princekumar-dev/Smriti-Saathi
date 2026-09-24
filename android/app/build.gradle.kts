@@ -6,7 +6,9 @@ plugins {
 
 android {
     namespace = "com.example.smirithi_saathi"
-    compileSdk = flutter.compileSdkVersion
+    // Pinned to 36: flutter_native_splash's transitive AndroidX deps
+    // (fragment 1.7.1, window 1.2.0, activity 1.8.1) require compileSdk >= 34.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

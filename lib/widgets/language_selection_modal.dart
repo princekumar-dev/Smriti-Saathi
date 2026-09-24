@@ -744,7 +744,7 @@ class _LanguageSelectionModalState extends State<LanguageSelectionModal>
                                 _selectedLanguage,
                                 color: Colors.white,
                                 fontSize: 16.5,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                                 letterSpacing: 0.2,
                               ),
                             ),
@@ -995,7 +995,7 @@ class _LanguageSelectionModalState extends State<LanguageSelectionModal>
                 style: AppTranslations.getFont(
                   lang.englishName,
                   fontSize: 17.5,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: isSelected ? accent : AppTheme.deepForest,
                 ),
               ),

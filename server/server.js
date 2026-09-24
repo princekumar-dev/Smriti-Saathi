@@ -12,6 +12,10 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://prince:prince55833
 
 // Middleware
 app.use(cors());
+app.use((req, res, next) => {
+  console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`);
+  next();
+});
 app.use(express.json({ limit: '10mb' }));
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
@@ -39,7 +43,9 @@ const CaretakerSchema = new mongoose.Schema({
   phone: { type: String, default: '', trim: true },
   relationship: { type: String, default: 'Family Member' },
   password: { type: String, default: '' },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+  deleted: { type: Boolean, default: false }
 });
 
 // 2. Patient / Senior Schema
@@ -56,7 +62,9 @@ const PatientSchema = new mongoose.Schema({
   emergencyPhone: { type: String, default: '' },
   pairingCode: { type: String, required: true, unique: true, uppercase: true, trim: true },
   notes: { type: String, default: '' },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+  deleted: { type: Boolean, default: false }
 });
 
 // 3. Memory Schema
@@ -70,12 +78,16 @@ const MemorySchema = new mongoose.Schema({
   event: { type: String, default: '' },
   taggedPersons: { type: [String], default: [] },
   mediaPath: { type: String, default: null },
+  audioPath: { type: String, default: null },
   isVideo: { type: Boolean, default: false },
+  favorite: { type: Boolean, default: false },
   recallQuestion: { type: String, default: '' },
   recallAnswer: { type: String, default: '' },
   alternativeAnswers: { type: [String], default: [] },
   reminiscenceStory: { type: String, default: '' },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+  deleted: { type: Boolean, default: false }
 });
 
 // 4. Family Member Schema
@@ -86,7 +98,9 @@ const FamilyMemberSchema = new mongoose.Schema({
   relation: { type: String, required: true },
   phone: { type: String, default: '' },
   notes: { type: String, default: '' },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+  deleted: { type: Boolean, default: false }
 });
 
 // 5. Routine Reminder Schema
@@ -97,7 +111,22 @@ const ReminderSchema = new mongoose.Schema({
   subtitle: { type: String, default: '' },
   time: { type: String, required: true },
   completed: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+  deleted: { type: Boolean, default: false }
+});
+
+// 6. Game Score Schema (offline-playable games; synced like reminders)
+const GameScoreSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  patientId: { type: String, default: '' },
+  game: { type: String, required: true },
+  score: { type: Number, default: 0 },
+  stars: { type: Number, default: 0 },
+  extra: { type: mongoose.Schema.Types.Mixed, default: {} },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+  deleted: { type: Boolean, default: false }
 });
 
 const Caretaker = mongoose.model('Caretaker', CaretakerSchema);
@@ -105,6 +134,41 @@ const Patient = mongoose.model('Patient', PatientSchema);
 const Memory = mongoose.model('Memory', MemorySchema);
 const FamilyMember = mongoose.model('FamilyMember', FamilyMemberSchema);
 const Reminder = mongoose.model('Reminder', ReminderSchema);
+const GameScore = mongoose.model('GameScore', GameScoreSchema);
+
+// ----------------------------------------------------
+// Sync helpers (offline-first: incremental pull + soft-delete tombstones)
+// ----------------------------------------------------
+
+// Builds a Mongo filter from query params.
+//  - Incremental pull (?since=<iso|ms>) INCLUDES tombstones so deletions
+//    propagate to offline clients, which drop them locally.
+//  - Full pull (no ?since) hides tombstones so a fresh load stays clean.
+//  - ?includeDeleted=true forces tombstones in regardless.
+function buildSyncFilter(req) {
+  const filter = {};
+  if (req.query.patientId) filter.patientId = req.query.patientId;
+
+  let since = null;
+  if (req.query.since) {
+    const raw = req.query.since;
+    const parsed = /^\d+$/.test(String(raw)) ? new Date(Number(raw)) : new Date(raw);
+    if (!isNaN(parsed.getTime())) since = parsed;
+  }
+  if (since) filter.updatedAt = { $gt: since };
+
+  const includeDeleted = req.query.includeDeleted === 'true' || since !== null;
+  if (!includeDeleted) {
+    // Treat legacy docs without the field as not-deleted.
+    filter.$or = [{ deleted: false }, { deleted: { $exists: false } }];
+  }
+  return filter;
+}
+
+// Stamps updatedAt on every write so clients can pull incrementally.
+function stampUpdate(data) {
+  return { ...data, updatedAt: new Date() };
+}
 
 // ----------------------------------------------------
 // Health Check Endpoint
@@ -283,7 +347,7 @@ app.post('/api/patients', async (req, res) => {
 
     const patient = await Patient.findOneAndUpdate(
       { id: data.id },
-      data,
+      stampUpdate(data),
       { upsert: true, new: true }
     );
 
@@ -365,8 +429,7 @@ app.post('/api/patients/validate-passkey', async (req, res) => {
 // ----------------------------------------------------
 app.get('/api/memories', async (req, res) => {
   try {
-    const filter = {};
-    if (req.query.patientId) filter.patientId = req.query.patientId;
+    const filter = buildSyncFilter(req);
     const memories = await Memory.find(filter).sort({ createdAt: -1 });
     res.json(memories);
   } catch (err) {
@@ -380,7 +443,7 @@ app.post('/api/memories', async (req, res) => {
     if (!data.id) data.id = 'mem_' + Date.now();
     const memory = await Memory.findOneAndUpdate(
       { id: data.id },
-      data,
+      stampUpdate(data),
       { upsert: true, new: true }
     );
     res.status(201).json(memory);
@@ -391,7 +454,12 @@ app.post('/api/memories', async (req, res) => {
 
 app.delete('/api/memories/:id', async (req, res) => {
   try {
-    const result = await Memory.findOneAndDelete({ id: req.params.id });
+    // Soft-delete: tombstone so the deletion propagates to offline clients.
+    const result = await Memory.findOneAndUpdate(
+      { id: req.params.id },
+      { deleted: true, updatedAt: new Date() },
+      { new: true }
+    );
     if (!result) return res.status(404).json({ error: 'Memory not found' });
     res.json({ success: true, deleted: result });
   } catch (err) {
@@ -404,8 +472,7 @@ app.delete('/api/memories/:id', async (req, res) => {
 // ----------------------------------------------------
 app.get('/api/family', async (req, res) => {
   try {
-    const filter = {};
-    if (req.query.patientId) filter.patientId = req.query.patientId;
+    const filter = buildSyncFilter(req);
     const members = await FamilyMember.find(filter).sort({ createdAt: 1 });
     res.json(members);
   } catch (err) {
@@ -419,7 +486,7 @@ app.post('/api/family', async (req, res) => {
     if (!data.id) data.id = 'family_' + Date.now();
     const member = await FamilyMember.findOneAndUpdate(
       { id: data.id },
-      data,
+      stampUpdate(data),
       { upsert: true, new: true }
     );
     res.status(201).json(member);
@@ -430,7 +497,11 @@ app.post('/api/family', async (req, res) => {
 
 app.delete('/api/family/:id', async (req, res) => {
   try {
-    const result = await FamilyMember.findOneAndDelete({ id: req.params.id });
+    const result = await FamilyMember.findOneAndUpdate(
+      { id: req.params.id },
+      { deleted: true, updatedAt: new Date() },
+      { new: true }
+    );
     if (!result) return res.status(404).json({ error: 'Family member not found' });
     res.json({ success: true, deleted: result });
   } catch (err) {
@@ -443,8 +514,7 @@ app.delete('/api/family/:id', async (req, res) => {
 // ----------------------------------------------------
 app.get('/api/reminders', async (req, res) => {
   try {
-    const filter = {};
-    if (req.query.patientId) filter.patientId = req.query.patientId;
+    const filter = buildSyncFilter(req);
     const reminders = await Reminder.find(filter).sort({ createdAt: 1 });
     res.json(reminders);
   } catch (err) {
@@ -458,7 +528,7 @@ app.post('/api/reminders', async (req, res) => {
     if (!data.id) data.id = 'reminder_' + Date.now();
     const reminder = await Reminder.findOneAndUpdate(
       { id: data.id },
-      data,
+      stampUpdate(data),
       { upsert: true, new: true }
     );
     res.status(201).json(reminder);
@@ -471,7 +541,7 @@ app.put('/api/reminders/:id', async (req, res) => {
   try {
     const reminder = await Reminder.findOneAndUpdate(
       { id: req.params.id },
-      req.body,
+      stampUpdate(req.body),
       { new: true }
     );
     if (!reminder) return res.status(404).json({ error: 'Reminder not found' });
@@ -483,8 +553,55 @@ app.put('/api/reminders/:id', async (req, res) => {
 
 app.delete('/api/reminders/:id', async (req, res) => {
   try {
-    const result = await Reminder.findOneAndDelete({ id: req.params.id });
+    const result = await Reminder.findOneAndUpdate(
+      { id: req.params.id },
+      { deleted: true, updatedAt: new Date() },
+      { new: true }
+    );
     if (!result) return res.status(404).json({ error: 'Reminder not found' });
+    res.json({ success: true, deleted: result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ----------------------------------------------------
+// Game Scores Endpoints (offline-playable games; synced like reminders)
+// ----------------------------------------------------
+app.get('/api/gamescores', async (req, res) => {
+  try {
+    const filter = buildSyncFilter(req);
+    if (req.query.game) filter.game = req.query.game;
+    const scores = await GameScore.find(filter).sort({ createdAt: -1 });
+    res.json(scores);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/gamescores', async (req, res) => {
+  try {
+    const data = req.body;
+    if (!data.id) data.id = 'score_' + Date.now();
+    const score = await GameScore.findOneAndUpdate(
+      { id: data.id },
+      stampUpdate(data),
+      { upsert: true, new: true }
+    );
+    res.status(201).json(score);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/gamescores/:id', async (req, res) => {
+  try {
+    const result = await GameScore.findOneAndUpdate(
+      { id: req.params.id },
+      { deleted: true, updatedAt: new Date() },
+      { new: true }
+    );
+    if (!result) return res.status(404).json({ error: 'Game score not found' });
     res.json({ success: true, deleted: result });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -499,6 +616,7 @@ app.delete('/api/cleanup/all', async (req, res) => {
     const m = await Memory.deleteMany({});
     const f = await FamilyMember.deleteMany({});
     const r = await Reminder.deleteMany({});
+    const g = await GameScore.deleteMany({});
     const p = await Patient.deleteMany({});
     const c = await Caretaker.deleteMany({});
     res.json({
@@ -508,6 +626,7 @@ app.delete('/api/cleanup/all', async (req, res) => {
         memories: m.deletedCount,
         family: f.deletedCount,
         reminders: r.deletedCount,
+        gamescores: g.deletedCount,
         patients: p.deletedCount,
         caretakers: c.deletedCount
       }

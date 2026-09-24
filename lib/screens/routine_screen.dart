@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../data/repositories/reminder_repository.dart';
+import '../data/local/sync_fields.dart';
 import '../data/sample_data.dart';
-import '../services/api_service.dart';
+import '../state/auth_state.dart';
 import '../theme/app_motion.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_scale_button.dart';
@@ -15,41 +17,71 @@ class RoutineScreen extends StatefulWidget {
 }
 
 class _RoutineScreenState extends State<RoutineScreen> {
-  final List<Map<String, dynamic>> _reminders = List.from(SampleData.reminders);
+  // Offline-first store (Hive-backed, best-effort server sync). Reads/writes go
+  // only through the repository — never ApiService directly.
+  final ReminderRepository _repo = ReminderRepository();
+  final List<Map<String, dynamic>> _reminders = [];
+  String? _patientId;
+  bool _bound = false;
 
   @override
-  void initState() {
-    super.initState();
-    _loadReminders();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_bound) return;
+    _bound = true;
+    _patientId = AuthScope.of(context).activePatient?.id;
+    _seedIfEmpty();
+    _reload();
+    _repo.refreshFromRemote().then((_) {
+      if (mounted) _reload();
+    });
   }
 
-  Future<void> _loadReminders() async {
-    final rems = await ApiService().fetchReminders();
-    if (rems.isNotEmpty && mounted) {
-      setState(() {
-        _reminders.clear();
-        _reminders.addAll(rems.map((r) => {
+  /// Seed the local store from the sample schedule on first run so the day
+  /// isn't blank; from then on reminders persist offline.
+  void _seedIfEmpty() {
+    if (_repo.getAll(patientId: _patientId).isNotEmpty) return;
+    for (final r in SampleData.reminders) {
+      _repo.upsert({
+        kId: r['id']?.toString() ??
+            'rem_${DateTime.now().microsecondsSinceEpoch}',
+        if (_patientId != null) kPatientId: _patientId,
+        'title': r['title'] ?? '',
+        'subtitle': r['subtitle'] ?? '',
+        'time': r['time'] ?? '',
+        'completed': r['completed'] == true,
+      });
+    }
+  }
+
+  /// Re-read the repository into display rows (icon is presentation-only).
+  void _reload() {
+    final rows = _repo.getAll(patientId: _patientId).map((r) => {
           'id': r['id'] ?? '',
           'title': r['title'] ?? '',
           'subtitle': r['subtitle'] ?? '',
           'time': r['time'] ?? '',
           'icon': Icons.alarm_on_rounded,
           'completed': r['completed'] == true,
-        }));
-      });
-    }
+        });
+    setState(() {
+      _reminders
+        ..clear()
+        ..addAll(rows);
+    });
   }
 
   void _toggleReminder(int index) {
-    setState(() {
-      final current = _reminders[index]['completed'] as bool;
-      _reminders[index]['completed'] = !current;
-    });
+    final current = _reminders[index]['completed'] as bool;
+    final nowCompleted = !current;
+    setState(() => _reminders[index]['completed'] = nowCompleted);
 
-    final nowCompleted = _reminders[index]['completed'] as bool;
     final remId = _reminders[index]['id']?.toString();
     if (remId != null && remId.isNotEmpty) {
-      ApiService().updateReminder(remId, {'completed': nowCompleted});
+      final rec = _repo.getById(remId);
+      if (rec != null) {
+        _repo.upsert({...rec, 'completed': nowCompleted});
+      }
     }
 
     if (nowCompleted) {
@@ -144,18 +176,16 @@ class _RoutineScreenState extends State<RoutineScreen> {
               ElevatedButton.icon(
                 onPressed: () {
                   if (titleCtrl.text.isNotEmpty) {
-                    final newRem = {
-                      'id': 'rem_${DateTime.now().millisecondsSinceEpoch}',
+                    final id = 'rem_${DateTime.now().millisecondsSinceEpoch}';
+                    _repo.upsert({
+                      kId: id,
+                      if (_patientId != null) kPatientId: _patientId,
                       'title': titleCtrl.text.trim(),
                       'subtitle': subtitleCtrl.text.trim(),
                       'time': timeCtrl.text.trim().isNotEmpty ? timeCtrl.text.trim() : 'Now',
-                      'icon': Icons.alarm_on_rounded,
                       'completed': false,
-                    };
-                    setState(() {
-                      _reminders.add(newRem);
                     });
-                    ApiService().saveReminder(newRem);
+                    _reload();
                     Navigator.pop(ctx);
                   }
                 },

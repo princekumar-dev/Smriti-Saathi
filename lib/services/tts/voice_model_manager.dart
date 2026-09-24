@@ -131,6 +131,9 @@ class VoiceModelManager extends ChangeNotifier {
         await _downloadTierBModel(entry, targetDir, onProgress);
       }
 
+      // Normalize file names so the loader always finds model.onnx / tokens.txt
+      await _normalizeModelFiles(targetDir);
+
       // Final integrity verification
       final isSuccess = await _verifyModelFiles(entry);
       if (isSuccess) {
@@ -147,6 +150,49 @@ class VoiceModelManager extends ChangeNotifier {
       _errors[entry.id] = e.toString();
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Sherpa-ONNX bundles don't all name their weights `model.onnx` — Piper and
+  /// mimic3 archives ship `<voice>.onnx`, and tokens can arrive as `tokens.txt`
+  /// nested one level down. The loader ([NeuralTtsService]) and [_verifyModelFiles]
+  /// both expect a flat `model.onnx` + `tokens.txt`, so reconcile the layout here.
+  Future<void> _normalizeModelFiles(Directory targetDir) async {
+    if (kIsWeb) return;
+    try {
+      final modelFile = File('${targetDir.path}/model.onnx');
+      final tokensFile = File('${targetDir.path}/tokens.txt');
+
+      // Scan the extracted tree once for stray onnx / tokens files.
+      final entities = await targetDir.list(recursive: true).toList();
+
+      if (!await modelFile.exists()) {
+        File? candidate;
+        for (final e in entities) {
+          if (e is File && e.path.toLowerCase().endsWith('.onnx')) {
+            // Prefer the largest .onnx (the actual acoustic model).
+            if (candidate == null ||
+                await e.length() > await candidate.length()) {
+              candidate = e;
+            }
+          }
+        }
+        if (candidate != null) {
+          await candidate.copy(modelFile.path);
+        }
+      }
+
+      if (!await tokensFile.exists()) {
+        for (final e in entities) {
+          if (e is File &&
+              e.path.replaceAll('\\', '/').toLowerCase().endsWith('tokens.txt')) {
+            await e.copy(tokensFile.path);
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[VoiceModelManager] normalize error: $e');
     }
   }
 

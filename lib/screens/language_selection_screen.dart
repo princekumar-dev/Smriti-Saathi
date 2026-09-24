@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -25,11 +28,13 @@ class LanguageSelectionScreen extends StatefulWidget {
 }
 
 class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late String _selectedLanguage;
   String? _currentlySpeaking;
   late final AnimationController _breathe;
+  late final AnimationController _shimmer;
   bool _isPreparingVoice = false;
+  bool _voiceReadyPreviewing = false;
 
   static const Map<String, Color> _langAccents = {
     'English': Color(0xFF1B6B4A),
@@ -69,6 +74,96 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
         AppTheme.forest;
   }
 
+  /// Localized copy for the on-demand neural voice download, keyed by English
+  /// language name. Falls back to English when a translation is missing.
+  static const Map<String, List<String>> _voiceCopy = {
+    // [ download CTA, preparing message, offline hint ]
+    'English': [
+      'Download Voice & Continue',
+      'Preparing your natural voice',
+      'Works fully offline afterwards',
+    ],
+    'Hindi': [
+      'आवाज़ डाउनलोड करें और आगे बढ़ें',
+      'आपकी प्राकृतिक आवाज़ तैयार हो रही है',
+      'इसके बाद पूरी तरह ऑफ़लाइन काम करेगा',
+    ],
+    'Tamil': [
+      'குரலைப் பதிவிறக்கி தொடரவும்',
+      'உங்கள் இயற்கை குரல் தயாராகிறது',
+      'பின்னர் முழுவதும் ஆஃப்லைனில் இயங்கும்',
+    ],
+    'Telugu': [
+      'వాయిస్ డౌన్‌లోడ్ చేసి కొనసాగించండి',
+      'మీ సహజ వాయిస్ సిద్ధమవుతోంది',
+      'ఆ తర్వాత పూర్తిగా ఆఫ్‌లైన్‌లో పనిచేస్తుంది',
+    ],
+    'Kannada': [
+      'ಧ್ವನಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ ಮುಂದುವರಿಯಿರಿ',
+      'ನಿಮ್ಮ ಸಹಜ ಧ್ವನಿ ಸಿದ್ಧವಾಗುತ್ತಿದೆ',
+      'ನಂತರ ಸಂಪೂರ್ಣ ಆಫ್‌ಲೈನ್‌ನಲ್ಲಿ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತದೆ',
+    ],
+    'Malayalam': [
+      'ശബ്ദം ഡൗൺലോഡ് ചെയ്ത് തുടരുക',
+      'നിങ്ങളുടെ സ്വാഭാവിക ശബ്ദം തയ്യാറാകുന്നു',
+      'പിന്നീട് പൂർണ്ണമായും ഓഫ്‌ലൈനിൽ പ്രവർത്തിക്കും',
+    ],
+    'Marathi': [
+      'आवाज डाउनलोड करा आणि पुढे जा',
+      'तुमचा नैसर्गिक आवाज तयार होत आहे',
+      'त्यानंतर पूर्णपणे ऑफलाइन चालेल',
+    ],
+    'Bengali': [
+      'ভয়েস ডাউনলোড করে এগিয়ে যান',
+      'আপনার প্রাকৃতিক কণ্ঠ প্রস্তুত হচ্ছে',
+      'এরপর সম্পূর্ণ অফলাইনে কাজ করবে',
+    ],
+    'Gujarati': [
+      'અવાજ ડાઉનલોડ કરો અને આગળ વધો',
+      'તમારો કુદરતી અવાજ તૈયાર થઈ રહ્યો છે',
+      'ત્યારબાદ સંપૂર્ણ ઓફલાઇન કામ કરશે',
+    ],
+    'Punjabi': [
+      'ਆਵਾਜ਼ ਡਾਊਨਲੋਡ ਕਰੋ ਅਤੇ ਅੱਗੇ ਵਧੋ',
+      'ਤੁਹਾਡੀ ਕੁਦਰਤੀ ਆਵਾਜ਼ ਤਿਆਰ ਹੋ ਰਹੀ ਹੈ',
+      'ਇਸ ਤੋਂ ਬਾਅਦ ਪੂਰੀ ਤਰ੍ਹਾਂ ਆਫ਼ਲਾਈਨ ਕੰਮ ਕਰੇਗਾ',
+    ],
+    'Odia': [
+      'ସ୍ୱର ଡାଉନଲୋଡ୍ କରି ଆଗକୁ ବଢ଼ନ୍ତୁ',
+      'ଆପଣଙ୍କ ପ୍ରାକୃତିକ ସ୍ୱର ପ୍ରସ୍ତୁତ ହେଉଛି',
+      'ପରେ ସମ୍ପୂର୍ଣ୍ଣ ଅଫଲାଇନ୍‌ରେ କାମ କରିବ',
+    ],
+    'Assamese': [
+      'ধ্বনি ডাউনলোড কৰি আগবাঢ়ক',
+      'আপোনাৰ প্ৰাকৃতিক কণ্ঠ প্ৰস্তুত হৈ আছে',
+      'ইয়াৰ পিছত সম্পূৰ্ণ অফলাইনত কাম কৰিব',
+    ],
+    'Nepali': [
+      'आवाज डाउनलोड गरी अगाडि बढ्नुहोस्',
+      'तपाईंको प्राकृतिक आवाज तयार हुँदैछ',
+      'त्यसपछि पूर्ण रूपमा अफलाइन चल्नेछ',
+    ],
+  };
+
+  List<String> _voiceStrings() {
+    final english = AppTranslations.getLanguageInfo(_selectedLanguage).englishName;
+    return _voiceCopy[english] ?? _voiceCopy['English']!;
+  }
+
+  /// True when the selected language has a neural voice pack that is not yet
+  /// downloaded — used to swap the CTA to a download-aware label.
+  bool _needsVoiceDownload() {
+    if (kIsWeb) return false;
+    final settings = AppSettingsScope.of(context);
+    final model = VoiceModelRegistry.getModelFor(
+      language: _selectedLanguage,
+      persona: settings.voicePersona,
+    );
+    return model != null &&
+        model.isNeuralAvailable &&
+        !VoiceModelManager().isReady(model.id);
+  }
+
   String _getLanguageCode(LanguageInfo lang) {
     final prefix = lang.ttsLocale.split(RegExp(r'[-_]')).first.toUpperCase();
     if (prefix == 'EN') return 'EN';
@@ -103,11 +198,16 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
       vsync: this,
       duration: const Duration(milliseconds: 2600),
     )..repeat(reverse: true);
+    _shimmer = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat();
   }
 
   @override
   void dispose() {
     _breathe.dispose();
+    _shimmer.dispose();
     VoiceEngine().stop();
     super.dispose();
   }
@@ -159,7 +259,14 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
           !VoiceModelManager().isReady(model.id)) {
         if (!_isPreparingVoice) {
           setState(() => _isPreparingVoice = true);
-          VoiceModelManager().downloadModel(model).then((success) {
+          VoiceModelManager().downloadModel(model).then((success) async {
+            if (!mounted || !_isPreparingVoice) return;
+            // Let the senior hear the exact offline voice they just downloaded —
+            // the confirmation greeting now plays through the real neural model,
+            // so the "initial sound" matches what will speak to them from here on.
+            if (success) {
+              await _previewDownloadedNeuralVoice();
+            }
             if (mounted && _isPreparingVoice) {
               _executeConfirm();
             }
@@ -170,6 +277,40 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
     }
 
     _executeConfirm();
+  }
+
+  /// After the neural pack lands, greet the user once in that freshly-downloaded
+  /// offline voice so the preview and the installed voice are one and the same.
+  /// Completes when the greeting finishes, with a safety cap so the flow never
+  /// stalls if playback is unavailable.
+  Future<void> _previewDownloadedNeuralVoice() async {
+    try {
+      final lang = AppTranslations.getLanguageInfo(_selectedLanguage);
+      if (mounted) setState(() => _voiceReadyPreviewing = true);
+
+      await VoiceEngine().setLanguage(lang.englishName);
+      final textToSpeak = (VoiceEngine().isUsingPhoneticFallback &&
+              lang.phoneticGreeting.isNotEmpty)
+          ? lang.phoneticGreeting
+          : lang.greeting;
+
+      final completer = Completer<void>();
+      VoiceEngine().speak(
+        textToSpeak,
+        language: lang.englishName,
+        onDone: () {
+          if (!completer.isCompleted) completer.complete();
+        },
+      );
+      await completer.future.timeout(
+        const Duration(seconds: 6),
+        onTimeout: () {},
+      );
+    } catch (_) {
+      // Playback issues must never block advancing to the next screen.
+    } finally {
+      if (mounted) setState(() => _voiceReadyPreviewing = false);
+    }
   }
 
   void _executeConfirm() {
@@ -193,21 +334,26 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F3EA),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFDFBF4),
-              Color(0xFFF6F3EA),
-              Color(0xFFEFF5EC),
-            ],
-            stops: [0.0, 0.5, 1.0],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
+      body: LayoutBuilder(
+        builder: (context, constraints) => SizedBox(
+          height: constraints.maxHeight.isInfinite
+              ? MediaQuery.of(context).size.height
+              : constraints.maxHeight,
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFFDFBF4),
+                  Color(0xFFF6F3EA),
+                  Color(0xFFEFF5EC),
+                ],
+                stops: [0.0, 0.5, 1.0],
+              ),
+            ),
+            child: SafeArea(
+              child: Column(
             children: [
               // Centered premium header with breathing globe
               Padding(
@@ -357,6 +503,8 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
           ],
         ),
         ),
+        ),
+        ),
       ),
 
       // Floating Bottom Confirmation Action
@@ -378,42 +526,64 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
           top: false,
           child: _isPreparingVoice
               ? _buildVoiceDownloadProgress(translation)
-              : SizedBox(
-                  width: double.infinity,
-                  height: 58,
-                  child: AnimatedScaleButton(
-                    onTap: _confirmSelection,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.emeraldGradient,
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.forest.withValues(alpha: 0.38),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
+              : AnimatedBuilder(
+                  animation: VoiceModelManager(),
+                  builder: (context, _) {
+                    final needsDownload = _needsVoiceDownload();
+                    final label = needsDownload
+                        ? _voiceStrings()[0]
+                        : translation.confirmButton;
+                    return SizedBox(
+                      width: double.infinity,
+                      height: 58,
+                      child: AnimatedScaleButton(
+                        onTap: _confirmSelection,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: AppTheme.emeraldGradient,
+                            borderRadius: BorderRadius.circular(18),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.forest.withValues(alpha: 0.38),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            translation.confirmButton,
-                            style: AppTranslations.getFont(
-                              _selectedLanguage,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (needsDownload) ...[
+                                const Icon(Icons.download_rounded,
+                                    size: 20, color: Colors.white),
+                                const SizedBox(width: 10),
+                              ],
+                              Flexible(
+                                child: Text(
+                                  label,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTranslations.getFont(
+                                    _selectedLanguage,
+                                    fontSize: 16.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              const Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 20,
+                                color: Colors.white,
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 10),
-                          const Icon(Icons.arrow_forward_rounded,
-                              size: 20, color: Colors.white),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
         ),
       ),
@@ -426,29 +596,33 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
       language: _selectedLanguage,
       persona: settings.voicePersona,
     );
+    final copy = _voiceStrings();
+    final preparingMsg = copy[1];
+    final offlineHint = copy[2];
 
     return AnimatedBuilder(
-      animation: VoiceModelManager(),
+      animation: Listenable.merge([VoiceModelManager(), _shimmer]),
       builder: (context, _) {
         final progress = model != null
             ? VoiceModelManager().getProgress(model.id)
             : 0.0;
         final percent = (progress * 100).toInt();
+        final previewing = _voiceReadyPreviewing;
 
         return Container(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            gradient: AppTheme.glassCardGradient,
+            borderRadius: BorderRadius.circular(22),
             border: Border.all(
               color: AppTheme.forest.withValues(alpha: 0.22),
               width: 1.2,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.forest.withValues(alpha: 0.12),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
+                color: AppTheme.forest.withValues(alpha: 0.14),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
@@ -457,12 +631,19 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
             children: [
               Row(
                 children: [
-                  const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: AppTheme.forest,
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.emeraldSoftGradient,
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: Icon(
+                      previewing
+                          ? Icons.volume_up_rounded
+                          : Icons.graphic_eq_rounded,
+                      size: 20,
+                      color: Colors.white,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -471,18 +652,26 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Preparing natural voice… $percent%',
-                          style: GoogleFonts.dmSans(
+                          previewing
+                              ? '${AppTranslations.getLanguageInfo(_selectedLanguage).greeting} 🎙'
+                              : '$preparingMsg… $percent%',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTranslations.getFont(
+                            _selectedLanguage,
                             fontSize: 14.5,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
                             color: AppTheme.deepForest,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${model?.sizeLabel ?? "~65 MB"} · Works fully offline afterwards',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 12,
+                          '${model?.sizeLabel ?? "~65 MB"} · $offlineHint',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTranslations.getFont(
+                            _selectedLanguage,
+                            fontSize: 11.5,
                             fontWeight: FontWeight.w500,
                             color: AppTheme.muted,
                           ),
@@ -492,18 +681,9 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(
-                  value: progress > 0 ? progress : null,
-                  minHeight: 6,
-                  backgroundColor: AppTheme.forest.withValues(alpha: 0.12),
-                  valueColor:
-                      const AlwaysStoppedAnimation<Color>(AppTheme.forest),
-                ),
-              ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 12),
+              _buildAnimatedProgressBar(previewing ? 1.0 : progress),
+              const SizedBox(height: 4),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
@@ -513,8 +693,9 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                   ),
                   child: Text(
-                    'Continue anyway →',
-                    style: GoogleFonts.dmSans(
+                    '${translation.continueButton} →',
+                    style: AppTranslations.getFont(
+                      _selectedLanguage,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.forest,
@@ -529,8 +710,99 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
     );
   }
 
-  Widget _buildLanguageCard(LanguageInfo lang) {
-    final isSelected = _selectedLanguage == lang.id ||
+  /// Progress bar filled with the brand's three-stop emerald gradient, with a
+  /// soft highlight that continuously sweeps across the filled portion.
+  Widget _buildAnimatedProgressBar(double progress) {
+    // Show a gentle indeterminate crawl before the first byte lands.
+    final fraction = progress <= 0.0 ? 0.06 : progress.clamp(0.02, 1.0);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final fullWidth = constraints.maxWidth;
+          final fillWidth = fullWidth * fraction;
+          final sweep = _shimmer.value; // 0..1
+          return Container(
+            height: 9,
+            width: fullWidth,
+            color: AppTheme.forest.withValues(alpha: 0.12),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: SizedBox(
+                width: fillWidth,
+                height: 9,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    // Base three-stop brand gradient
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: AppTheme.premiumGradient,
+                      ),
+                    ),
+                    // Moving highlight sweep
+                    Positioned(
+                      left: (fillWidth + 60) * sweep - 60,
+                      top: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 60,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.white.withValues(alpha: 0.0),
+                              Colors.white.withValues(alpha: 0.45),
+                              Colors.white.withValues(alpha: 0.0),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Soft, living equalizer shown in a language's badge while its greeting
+  /// plays — five bars breathing out of phase for a calm, soothing pulse
+  /// rather than a flat static icon.
+  Widget _buildEqualizer(Color accent) {
+    const bars = 5;
+    const phases = [0.0, 0.55, 0.2, 0.8, 0.35];
+    return AnimatedBuilder(
+      animation: _shimmer,
+      builder: (context, _) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: List.generate(bars, (i) {
+            final t = (_shimmer.value + phases[i]) % 1.0;
+            // Smooth 0→1→0 swell via a sine wave for gentle, organic motion.
+            final swell = 0.5 - 0.5 * math.cos(t * 2 * math.pi);
+            final height = 6.0 + swell * 16.0;
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 1.6),
+              child: Container(
+                width: 3.2,
+                height: height,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.55 + swell * 0.45),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+            );
+          }),
+        );
+      },
+    );
+  }
+
+  Widget _buildLanguageCard(LanguageInfo lang) {    final isSelected = _selectedLanguage == lang.id ||
         _selectedLanguage == lang.nativeName ||
         _selectedLanguage == lang.englishName;
     final isSpeaking = _currentlySpeaking == lang.id;
@@ -618,11 +890,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
                 ),
                 alignment: Alignment.center,
                 child: isSpeaking
-                    ? Icon(
-                        Icons.graphic_eq_rounded,
-                        color: accent,
-                        size: 26,
-                      )
+                    ? _buildEqualizer(accent)
                     : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

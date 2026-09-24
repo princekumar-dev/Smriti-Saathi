@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../data/local/sync_fields.dart';
+import '../../data/repositories/reminder_repository.dart';
 import '../../data/sample_data.dart';
 import '../../navigation/app_shell.dart';
-import '../../services/api_service.dart';
 import '../../services/memory_service.dart';
 import '../../state/auth_state.dart';
 import '../../theme/app_theme.dart';
@@ -19,24 +20,79 @@ class CaretakerDashboardScreen extends StatefulWidget {
 }
 
 class _CaretakerDashboardScreenState extends State<CaretakerDashboardScreen> {
-  final List<Map<String, dynamic>> _reminders = List.from(SampleData.reminders);
+  // Reminders live in the shared offline-first store, so what the caretaker
+  // sets here is exactly what the elder sees in routine_screen (same box, same
+  // patient id). Memories flow through MemoryService as before.
+  final ReminderRepository _reminderRepo = ReminderRepository();
+  final List<Map<String, dynamic>> _reminders = [];
   final List<Map<String, dynamic>> _memories = List.from(SampleData.memories);
+  String? _patientId;
+  bool _bound = false;
 
   @override
   void initState() {
     super.initState();
-    _loadDashboardData();
+    _loadMemories();
   }
 
-  Future<void> _loadDashboardData() async {
-    final rems = await ApiService().fetchReminders();
-    if (rems.isNotEmpty && mounted) {
-      setState(() {
-        _reminders.clear();
-        _reminders.addAll(rems);
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_bound) return;
+    _bound = true;
+    final auth = AuthScope.of(context);
+    _patientId = auth.activePatient?.id ??
+        (auth.registeredPatients.isNotEmpty
+            ? auth.registeredPatients.first.id
+            : null);
+    _seedRemindersIfEmpty();
+    _reloadReminders();
+    _reminderRepo.refreshFromRemote().then((_) {
+      if (mounted) _reloadReminders();
+    });
+  }
+
+  void _seedRemindersIfEmpty() {
+    if (_reminderRepo.getAll(patientId: _patientId).isNotEmpty) return;
+    for (final r in SampleData.reminders) {
+      _reminderRepo.upsert({
+        kId: r['id']?.toString() ??
+            'rem_${DateTime.now().microsecondsSinceEpoch}',
+        if (_patientId != null) kPatientId: _patientId,
+        'title': r['title'] ?? '',
+        'subtitle': r['subtitle'] ?? '',
+        'time': r['time'] ?? '',
+        'completed': r['completed'] == true,
       });
     }
+  }
 
+  void _reloadReminders() {
+    final rows = _reminderRepo.getAll(patientId: _patientId).map((r) => {
+          'id': r['id'] ?? '',
+          'title': r['title'] ?? '',
+          'subtitle': r['subtitle'] ?? '',
+          'time': r['time'] ?? '',
+          'icon': Icons.medication_rounded,
+          'completed': r['completed'] == true,
+        });
+    setState(() {
+      _reminders
+        ..clear()
+        ..addAll(rows);
+    });
+  }
+
+  /// Persist a reminder's completed flag back to the shared store.
+  void _setReminderCompleted(String? id, bool completed) {
+    if (id == null || id.isEmpty) return;
+    final rec = _reminderRepo.getById(id);
+    if (rec != null) {
+      _reminderRepo.upsert({...rec, 'completed': completed});
+    }
+  }
+
+  Future<void> _loadMemories() async {
     await MemoryService().loadFromDatabase();
     if (mounted) {
       setState(() {
@@ -122,18 +178,16 @@ class _CaretakerDashboardScreenState extends State<CaretakerDashboardScreen> {
               ElevatedButton.icon(
                 onPressed: () {
                   if (titleCtrl.text.isNotEmpty) {
-                    final newRem = {
-                      'id': 'reminder_${DateTime.now().millisecondsSinceEpoch}',
+                    final id = 'rem_${DateTime.now().millisecondsSinceEpoch}';
+                    _reminderRepo.upsert({
+                      kId: id,
+                      if (_patientId != null) kPatientId: _patientId,
                       'title': titleCtrl.text.trim(),
                       'subtitle': subtitleCtrl.text.trim(),
                       'time': timeCtrl.text.trim().isNotEmpty ? timeCtrl.text.trim() : 'Now',
-                      'icon': Icons.medication_rounded,
                       'completed': false,
-                    };
-                    setState(() {
-                      _reminders.add(newRem);
                     });
-                    ApiService().saveReminder(newRem);
+                    _reloadReminders();
                     Navigator.pop(ctx);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Routine reminder added for patient!')),
@@ -773,6 +827,8 @@ class _CaretakerDashboardScreenState extends State<CaretakerDashboardScreen> {
                           setState(() {
                             reminder['completed'] = val;
                           });
+                          _setReminderCompleted(
+                              reminder['id']?.toString(), val);
                         },
                       ),
                     ],

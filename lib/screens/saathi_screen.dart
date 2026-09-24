@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../navigation/app_shell.dart';
+import '../data/repositories/chat_repository.dart';
 import '../services/saathi_ai_engine.dart';
 import '../services/speech_service.dart';
 import '../services/voice_engine.dart';
@@ -45,6 +46,10 @@ class _SaathiScreenState extends State<SaathiScreen>
   late AnimationController _fadeController;
 
   final List<_ChatMessage> _conversation = [];
+
+  final ChatRepository _chatRepo = ChatRepository();
+  String? _patientId;
+  bool _chatLoaded = false;
 
   final List<_PromptItem> _prompts = [
     _PromptItem(Icons.schedule_rounded, 'What is on my schedule today?'),
@@ -101,6 +106,47 @@ class _SaathiScreenState extends State<SaathiScreen>
       } catch (_) {}
       _activeMessage = _getDefaultGreeting(settings.language);
     }
+    if (!_chatLoaded) {
+      _chatLoaded = true;
+      try {
+        _patientId = AuthScope.of(context).activePatient?.id;
+      } catch (_) {}
+      _loadChatHistory();
+    }
+  }
+
+  /// Rehydrate past conversation from the local (offline-first) chat store so
+  /// Saathi "remembers" what was said before, across app restarts.
+  void _loadChatHistory() {
+    try {
+      final history = _chatRepo.history(patientId: _patientId);
+      final pairs = <_ChatMessage>[];
+      String? pendingUser;
+      for (final row in history) {
+        final role = row['role']?.toString() ?? '';
+        final text = row['text']?.toString() ?? '';
+        final ts = DateTime.fromMillisecondsSinceEpoch(
+            (row['ts'] as num?)?.toInt() ?? 0);
+        if (role == 'user') {
+          pendingUser = text;
+        } else if (role == 'saathi') {
+          pairs.add(_ChatMessage(
+            userText: pendingUser ?? '',
+            aiReply: text,
+            timestamp: ts,
+          ));
+          pendingUser = null;
+        }
+      }
+      if (pairs.isNotEmpty) {
+        setState(() {
+          // Newest first, matching how new turns are inserted at index 0.
+          _conversation
+            ..clear()
+            ..addAll(pairs.reversed);
+        });
+      }
+    } catch (_) {}
   }
 
   String _getDefaultGreeting(String language) {
@@ -321,6 +367,14 @@ class _SaathiScreenState extends State<SaathiScreen>
     });
 
     await _speakResponse(response.text);
+
+    // Persist the turn offline-first so the conversation survives restarts.
+    try {
+      await _chatRepo.addMessage(
+          role: 'user', text: clean, patientId: _patientId);
+      await _chatRepo.addMessage(
+          role: 'saathi', text: response.text, patientId: _patientId);
+    } catch (_) {}
   }
 
   void _handleSuggestedAction(String action) {
@@ -372,25 +426,30 @@ class _SaathiScreenState extends State<SaathiScreen>
               padding: const EdgeInsets.fromLTRB(20, 14, 16, 14),
               child: Row(
                 children: [
-                  // Back / Logo
+                  // Companion avatar
                   Container(
-                    width: 42,
-                    height: 42,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                      gradient: AppTheme.emeraldGradient,
-                      borderRadius: BorderRadius.circular(14),
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFFFDF3DD), Color(0xFFF6E2BC)],
+                      ),
+                      border: Border.all(color: AppTheme.warmAmber, width: 2),
                       boxShadow: [
                         BoxShadow(
-                          color: AppTheme.forest.withValues(alpha: 0.25),
-                          blurRadius: 12,
+                          color: AppTheme.warmAmber.withValues(alpha: 0.3),
+                          blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
                       ],
                     ),
                     child: const Icon(
-                      Icons.psychology_rounded,
-                      color: Colors.white,
-                      size: 22,
+                      Icons.emoji_emotions_rounded,
+                      color: AppTheme.warmAmber,
+                      size: 26,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -399,7 +458,7 @@ class _SaathiScreenState extends State<SaathiScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Voice Saathi',
+                          'AI Saathi',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w900,
@@ -998,7 +1057,7 @@ class _SaathiScreenState extends State<SaathiScreen>
                 ? 'Listening with love'
                 : (_isSpeaking
                     ? 'Saathi is speaking'
-                    : (_isProcessing ? 'Reflecting with you' : 'Tap Orb to Speak')),
+                    : (_isProcessing ? 'Reflecting with you' : 'Tap to speak')),
             key: ValueKey(_isListening ? 'l' : (_isSpeaking ? 's' : (_isProcessing ? 'p' : 'i'))),
             style: const TextStyle(
               fontSize: 18,

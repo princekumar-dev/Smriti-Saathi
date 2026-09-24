@@ -1288,11 +1288,17 @@ class VoiceEngine extends ChangeNotifier {
       _isSpeaking = true;
       notifyListeners();
 
+      // Neural VITS/Piper voices sound their warmest and most soothing a hair
+      // below 1.0 — an unhurried, tender cadence for elderly listeners that
+      // shaves off the clipped, "AI-generated" briskness without ever dragging.
+      const neuralSoothingFactor = 0.94;
+
       final success = await _neuralTts.speak(
         naturalText,
         language: targetLang,
         persona: _persona,
-        speed: (effectiveRate * _langRateMul).clamp(0.6, 1.6),
+        speed: (effectiveRate * _langRateMul * neuralSoothingFactor)
+            .clamp(0.72, 1.15),
         onDone: () {
           _isSpeaking = false;
           _isNeuralActive = false;

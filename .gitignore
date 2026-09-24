@@ -52,3 +52,7 @@ node_modules/
 
 # Build output
 build/
+
+# Temporary screenshots & debug captures
+_ss_*.png
+test_ss*.png

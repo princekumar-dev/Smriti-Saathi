@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../data/repositories/family_repository.dart';
+import '../data/local/sync_fields.dart';
 import '../data/sample_data.dart';
-import '../services/api_service.dart';
+import '../state/auth_state.dart';
 import '../theme/app_motion.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_scale_button.dart';
@@ -15,29 +17,59 @@ class FamilyScreen extends StatefulWidget {
 }
 
 class _FamilyScreenState extends State<FamilyScreen> {
-  final List<Map<String, dynamic>> _familyMembers = List.from(SampleData.familyMembers);
+  // Offline-first store (Hive-backed, best-effort server sync). Screens read
+  // and write only through the repository — never ApiService directly.
+  final FamilyRepository _repo = FamilyRepository();
+  final List<Map<String, dynamic>> _familyMembers = [];
+  String? _patientId;
+  bool _bound = false;
 
   @override
-  void initState() {
-    super.initState();
-    _loadFamily();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_bound) return;
+    _bound = true;
+    _patientId = AuthScope.of(context).activePatient?.id;
+    _seedIfEmpty();
+    _reload();
+    // Pull anything newer from the server, then re-render.
+    _repo.refreshFromRemote().then((_) {
+      if (mounted) _reload();
+    });
   }
 
-  Future<void> _loadFamily() async {
-    final members = await ApiService().fetchFamilyMembers();
-    if (members.isNotEmpty && mounted) {
-      setState(() {
-        _familyMembers.clear();
-        _familyMembers.addAll(members.map((m) => {
+  /// First run has no saved family — seed the local store from the sample set
+  /// once so the circle isn't empty, then everything persists offline.
+  void _seedIfEmpty() {
+    if (_repo.getAll(patientId: _patientId).isNotEmpty) return;
+    for (final m in SampleData.familyMembers) {
+      _repo.upsert({
+        kId: m['id']?.toString() ??
+            'fam_${DateTime.now().microsecondsSinceEpoch}',
+        if (_patientId != null) kPatientId: _patientId,
+        'name': m['name'] ?? '',
+        'relation': m['relation'] ?? 'Family',
+        'phone': m['phone'] ?? '',
+      });
+    }
+  }
+
+  /// Re-read the repository and map records to display rows (icon/color are
+  /// presentation-only and never persisted).
+  void _reload() {
+    final rows = _repo.getAll(patientId: _patientId).map((m) => {
           'id': m['id'] ?? '',
           'name': m['name'] ?? '',
           'relation': m['relation'] ?? 'Family',
           'phone': m['phone'] ?? '',
           'icon': Icons.person_rounded,
           'color': AppTheme.sage,
-        }));
-      });
-    }
+        });
+    setState(() {
+      _familyMembers
+        ..clear()
+        ..addAll(rows);
+    });
   }
 
   void _callMember(Map<String, dynamic> member) {
@@ -156,8 +188,10 @@ class _FamilyScreenState extends State<FamilyScreen> {
               ElevatedButton.icon(
                 onPressed: () {
                   if (nameCtrl.text.isNotEmpty) {
-                    final newFam = {
-                      'id': 'fam_${DateTime.now().millisecondsSinceEpoch}',
+                    final id = 'fam_${DateTime.now().millisecondsSinceEpoch}';
+                    _repo.upsert({
+                      kId: id,
+                      if (_patientId != null) kPatientId: _patientId,
                       'name': nameCtrl.text.trim(),
                       'relation': relationCtrl.text.trim().isNotEmpty
                           ? relationCtrl.text.trim()
@@ -165,13 +199,8 @@ class _FamilyScreenState extends State<FamilyScreen> {
                       'phone': phoneCtrl.text.trim().isNotEmpty
                           ? phoneCtrl.text.trim()
                           : '+91 90000 00000',
-                      'icon': Icons.person_rounded,
-                      'color': AppTheme.sage,
-                    };
-                    setState(() {
-                      _familyMembers.add(newFam);
                     });
-                    ApiService().saveFamilyMember(newFam);
+                    _reload();
                     Navigator.pop(ctx);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Family member added and saved!')),

@@ -409,11 +409,25 @@ class AppTranslations {
     double? letterSpacing,
   }) {
     final langLower = language.toLowerCase();
+
+    // Indic fonts bundled (Noto Sans Indic families, Hind, Hind Siliguri) only support
+    // weights 400 (Regular), 500 (Medium), 600 (SemiBold), and 700 (Bold).
+    // Weights >= w800 must be clamped to w700 (Bold) and weights < w400 to w400 (Regular)
+    // so google_fonts never searches for non-existent variants (e.g. ExtraBold/Black).
+    FontWeight? indicWeight = fontWeight;
+    if (indicWeight != null) {
+      if (indicWeight.index > FontWeight.w700.index) {
+        indicWeight = FontWeight.w700;
+      } else if (indicWeight.index < FontWeight.w400.index) {
+        indicWeight = FontWeight.w400;
+      }
+    }
+
     // Tamil
     if (langLower.contains('tamil') || langLower.contains('தமிழ்')) {
       return GoogleFonts.notoSansTamil(
         fontSize: fontSize,
-        fontWeight: fontWeight,
+        fontWeight: indicWeight,
         color: color,
         height: height,
         letterSpacing: letterSpacing,
@@ -423,7 +437,7 @@ class AppTranslations {
     if (langLower.contains('telugu') || langLower.contains('తెలుగు')) {
       return GoogleFonts.notoSansTelugu(
         fontSize: fontSize,
-        fontWeight: fontWeight,
+        fontWeight: indicWeight,
         color: color,
         height: height,
         letterSpacing: letterSpacing,
@@ -433,7 +447,7 @@ class AppTranslations {
     if (langLower.contains('kannada') || langLower.contains('ಕನ್ನಡ')) {
       return GoogleFonts.notoSansKannada(
         fontSize: fontSize,
-        fontWeight: fontWeight,
+        fontWeight: indicWeight,
         color: color,
         height: height,
         letterSpacing: letterSpacing,
@@ -443,7 +457,7 @@ class AppTranslations {
     if (langLower.contains('malayalam') || langLower.contains('മലയാളം')) {
       return GoogleFonts.notoSansMalayalam(
         fontSize: fontSize,
-        fontWeight: fontWeight,
+        fontWeight: indicWeight,
         color: color,
         height: height,
         letterSpacing: letterSpacing,
@@ -453,7 +467,7 @@ class AppTranslations {
     if (langLower.contains('gujarati') || langLower.contains('ગુજરાતી')) {
       return GoogleFonts.notoSansGujarati(
         fontSize: fontSize,
-        fontWeight: fontWeight,
+        fontWeight: indicWeight,
         color: color,
         height: height,
         letterSpacing: letterSpacing,
@@ -463,7 +477,7 @@ class AppTranslations {
     if (langLower.contains('punjabi') || langLower.contains('ਪੰਜਾਬੀ')) {
       return GoogleFonts.notoSansGurmukhi(
         fontSize: fontSize,
-        fontWeight: fontWeight,
+        fontWeight: indicWeight,
         color: color,
         height: height,
         letterSpacing: letterSpacing,
@@ -473,7 +487,7 @@ class AppTranslations {
     if (langLower.contains('odia') || langLower.contains('oriya') || langLower.contains('ଓଡ଼ିଆ')) {
       return GoogleFonts.notoSansOriya(
         fontSize: fontSize,
-        fontWeight: fontWeight,
+        fontWeight: indicWeight,
         color: color,
         height: height,
         letterSpacing: letterSpacing,
@@ -489,7 +503,7 @@ class AppTranslations {
         langLower.contains('মৈতৈ')) {
       return GoogleFonts.hindSiliguri(
         fontSize: fontSize,
-        fontWeight: fontWeight,
+        fontWeight: indicWeight,
         color: color,
         height: height,
         letterSpacing: letterSpacing,
@@ -505,7 +519,7 @@ class AppTranslations {
         langLower.contains('नेपाली')) {
       return GoogleFonts.hind(
         fontSize: fontSize,
-        fontWeight: fontWeight,
+        fontWeight: indicWeight,
         color: color,
         height: height,
         letterSpacing: letterSpacing,
@@ -513,9 +527,13 @@ class AppTranslations {
     }
     // Modern Latin typography for English & Mizo
     else {
+      FontWeight? latinWeight = fontWeight;
+      if (latinWeight != null && latinWeight.index < FontWeight.w400.index) {
+        latinWeight = FontWeight.w400;
+      }
       return GoogleFonts.outfit(
         fontSize: fontSize,
-        fontWeight: fontWeight,
+        fontWeight: latinWeight,
         color: color,
         height: height,
         letterSpacing: letterSpacing,

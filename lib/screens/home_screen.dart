@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../data/app_translations.dart';
 import '../navigation/app_shell.dart';
@@ -9,14 +10,14 @@ import '../state/auth_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_scale_button.dart';
 import '../theme/app_motion.dart';
-import '../widgets/breathing_orb.dart';
 import '../widgets/fx/fade_slide_in.dart';
 import '../widgets/language_selection_modal.dart';
 import '../widgets/offline_badge.dart';
 import '../widgets/section_title.dart';
-import '../widgets/voice_checkin_dialog.dart';
 import 'activities_screen.dart';
 import 'memories_screen.dart';
+import 'memory_garden_screen.dart';
+import 'photo_memory_screen.dart';
 import 'onboarding_screen.dart';
 import 'routine_screen.dart';
 import 'saathi_screen.dart';
@@ -270,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 delay: AppMotion.staggerDelay(1),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
-                  child: _buildHeroVoiceCard(context),
+                  child: _buildTalkToSaathiCard(context),
                 ),
               ),
             ),
@@ -418,6 +419,28 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
+            // Memory Garden entry — the personal memory graph
+            SliverToBoxAdapter(
+              child: FadeSlideIn(
+                delay: AppMotion.staggerDelay(4),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  child: _buildMemoryGardenCard(context),
+                ),
+              ),
+            ),
+
+            // Photo Memory companion — capture a photo through gentle Q&A
+            SliverToBoxAdapter(
+              child: FadeSlideIn(
+                delay: AppMotion.staggerDelay(4),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                  child: _buildPhotoMemoryCard(context),
+                ),
+              ),
+            ),
+
             // Quick Activities Section
             SliverToBoxAdapter(
               child: FadeSlideIn(
@@ -452,144 +475,240 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHeroVoiceCard(BuildContext context) {
-    final userName = _getUserName(context);
-
-    return Container(
-      decoration: BoxDecoration(
-        gradient: AppTheme.deepHeroGradient,
-        borderRadius: BorderRadius.circular(AppTheme.radius28),
-        boxShadow: AppTheme.elevatedShadow,
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppTheme.warmAmber,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'VOICE COMPANION READY',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900,
-                      color: AppTheme.deepForest,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Daily Voice Saathi',
-                  style: TextStyle(
-                    fontSize: 23,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    height: 1.15,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Answer daily questions with your voice & speak commands naturally.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white.withValues(alpha: 0.88),
-                    height: 1.35,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    AnimatedScaleButton(
-                      onTap: () {
-                        VoiceCheckinDialog.show(context, userName: userName);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: AppTheme.warmAmber,
-                          borderRadius: BorderRadius.circular(AppTheme.radius18),
-                          boxShadow: AppTheme.softShadow,
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.mic_rounded, color: AppTheme.deepForest, size: 16),
-                            SizedBox(width: 5),
-                            Flexible(
-                              child: Text(
-                                'Voice Check-In',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppTheme.deepForest,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    AnimatedScaleButton(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const SaathiScreen()),
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(AppTheme.radius18),
-                          boxShadow: AppTheme.softShadow,
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.chat_bubble_outline_rounded, color: AppTheme.forest, size: 16),
-                            SizedBox(width: 5),
-                            Flexible(
-                              child: Text(
-                                'Chat Companion',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppTheme.deepForest,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+  // ── Memory Garden entry card ──
+  // Opens the visual personal memory graph (people, places, events…).
+  Widget _buildMemoryGardenCard(BuildContext context) {
+    return AnimatedScaleButton(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const MemoryGardenScreen()),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppTheme.radius28),
+          boxShadow: AppTheme.softShadow,
+          border: Border.all(color: AppTheme.divider, width: 1),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                color: AppTheme.paleSage,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.spa_rounded,
+                  color: AppTheme.forest, size: 30),
             ),
-          ),
-          const SizedBox(width: 12),
-          BreathingOrb(
-            size: 90,
-            icon: Icons.graphic_eq_rounded,
-            onTap: () {
-              VoiceCheckinDialog.show(context, userName: userName);
-            },
-          ),
-        ],
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Memory Garden',
+                      style: GoogleFonts.dmSans(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.deepForest)),
+                  const SizedBox(height: 2),
+                  Text('See your family, places and moments — connected',
+                      style: GoogleFonts.dmSans(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.muted,
+                          height: 1.3)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: AppTheme.forest),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Photo Memory companion entry card ──
+  // Opens the guided photo → Q&A → structured memory loop.
+  Widget _buildPhotoMemoryCard(BuildContext context) {
+    return AnimatedScaleButton(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PhotoMemoryScreen()),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppTheme.radius28),
+          boxShadow: AppTheme.softShadow,
+          border: Border.all(color: AppTheme.divider, width: 1),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 58,
+              height: 58,
+              decoration: const BoxDecoration(
+                color: AppTheme.paleCoral,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.photo_camera_front_rounded,
+                  color: AppTheme.coral, size: 30),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Share a photo with Saathi',
+                      style: GoogleFonts.dmSans(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.deepForest)),
+                  const SizedBox(height: 2),
+                  Text('Tell me about a picture, and I\'ll remember it',
+                      style: GoogleFonts.dmSans(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.muted,
+                          height: 1.3)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: AppTheme.forest),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── "Talk to AI Saathi" hero card ──
+  // A warm companion portrait + a green mic button. Tapping anywhere
+  // opens the AI Saathi chat/voice conversation screen.
+  Widget _buildTalkToSaathiCard(BuildContext context) {
+    return AnimatedScaleButton(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SaathiScreen()),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: AppTheme.deepHeroGradient,
+          borderRadius: BorderRadius.circular(AppTheme.radius28),
+          boxShadow: AppTheme.elevatedShadow,
+        ),
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+        child: Row(
+          children: [
+            // Companion avatar / portrait
+            Container(
+              width: 76,
+              height: 76,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFFDF3DD), Color(0xFFF6E2BC)],
+                ),
+                border: Border.all(color: AppTheme.warmAmber, width: 2.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.warmAmber.withValues(alpha: 0.35),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.emoji_emotions_rounded,
+                color: AppTheme.warmAmber,
+                size: 44,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppTheme.warmAmber,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'AI COMPANION',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w900,
+                        color: AppTheme.deepForest,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Talk to AI Saathi',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      height: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Tap to start a warm, caring conversation',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.88),
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Green mic button
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF1FB577), Color(0xFF0D5C46)],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.emerald.withValues(alpha: 0.5),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+                border: Border.all(color: Colors.white, width: 2.5),
+              ),
+              child: const Icon(
+                Icons.mic_rounded,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

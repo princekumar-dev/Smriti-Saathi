@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../data/app_translations.dart';
-import '../../navigation/app_shell.dart';
 import '../../services/app_assets.dart';
 import '../../state/app_settings.dart';
 import '../../state/auth_state.dart';
@@ -39,8 +38,6 @@ class _CaretakerAuthScreenState extends State<CaretakerAuthScreen>
   final _signupPhoneController = TextEditingController();
   final _signupPasswordController = TextEditingController();
   String _selectedRelationship = 'Daughter';
-  final _elderlyPassKeyController = TextEditingController();
-  bool _isSeniorLoading = false;
   bool _isCaretakerLoading = false;
   bool _obscureLoginPassword = true;
   bool _obscureSignupPassword = true;
@@ -102,7 +99,6 @@ class _CaretakerAuthScreenState extends State<CaretakerAuthScreen>
     _signupEmailController.dispose();
     _signupPhoneController.dispose();
     _signupPasswordController.dispose();
-    _elderlyPassKeyController.dispose();
     super.dispose();
   }
 
@@ -190,48 +186,6 @@ class _CaretakerAuthScreenState extends State<CaretakerAuthScreen>
     }
 
     _routeAfterAuth(auth);
-  }
-
-  Future<void> _loginElderlyWithCode([String? directCode]) async {
-    final code = directCode ?? _elderlyPassKeyController.text.trim();
-    if (code.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_auth.passKeyEmptyError),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTheme.radius14)),
-        ),
-      );
-      return;
-    }
-
-    setState(() => _isSeniorLoading = true);
-    final auth = AuthScope.of(context);
-    final success = await auth.loginAsPatientWithCode(code);
-    setState(() => _isSeniorLoading = false);
-
-    if (!mounted) return;
-
-    if (success) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const AppShell()),
-        (route) => false,
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            'Pass key not found. Please check with your caretaker.',
-          ),
-          backgroundColor: AppTheme.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTheme.radius14)),
-        ),
-      );
-    }
   }
 
   void _routeAfterAuth(AuthState auth) {
@@ -458,93 +412,9 @@ class _CaretakerAuthScreenState extends State<CaretakerAuthScreen>
 
                   const SizedBox(height: 26),
 
-                  // Tri-color Themed Section Divider (Coral & Warm Amber)
-                  FadeSlideIn(
-                    delay: AppMotion.staggerDelay(2),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            height: 1,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppTheme.coral.withValues(alpha: 0.0),
-                                  AppTheme.coral.withValues(alpha: 0.28),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 12),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 7),
-                          decoration: BoxDecoration(
-                            color:
-                                const Color(0xFFFBE7E0).withValues(alpha: 0.9),
-                            borderRadius:
-                                BorderRadius.circular(AppTheme.radiusFull),
-                            border: Border.all(
-                              color: AppTheme.coral.withValues(alpha: 0.28),
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.coral.withValues(alpha: 0.08),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.elderly_rounded,
-                                  size: 16, color: AppTheme.coral),
-                              const SizedBox(width: 6),
-                              Text(
-                                _auth.seniorCompanionLabel,
-                                style: GoogleFonts.dmSans(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  color: const Color(0xFF9E432A),
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Expanded(
-                          child: Container(
-                            height: 1,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppTheme.coral.withValues(alpha: 0.28),
-                                  AppTheme.coral.withValues(alpha: 0.0),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 18),
-
-                  // Elderly Pass Key Access Card (Coral Rose & Warm Amber Theme)
-                  FadeSlideIn(
-                    delay: AppMotion.staggerDelay(3),
-                    child: _buildElderlyPassKeySection(),
-                  ),
-
-                  const SizedBox(height: 24),
-
                   // 3-Color Trust Badges Footer
                   FadeSlideIn(
-                    delay: AppMotion.staggerDelay(4),
+                    delay: AppMotion.staggerDelay(2),
                     child: _buildTrustBadges(),
                   ),
                 ],
@@ -1180,179 +1050,6 @@ class _CaretakerAuthScreenState extends State<CaretakerAuthScreen>
           ),
         ),
       ],
-    );
-  }
-
-  // ── Elderly Pass Key Access Section (Coral Rose & Warm Amber Themed) ──
-  Widget _buildElderlyPassKeySection() {
-    return _glass(
-      radius: AppTheme.radius28,
-      tint: AppTheme.coral,
-      padding: const EdgeInsets.all(22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFFFDE8E1),
-                      Color(0xFFFBF1DC),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppTheme.coral.withValues(alpha: 0.28),
-                    width: 1.4,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.coral.withValues(alpha: 0.12),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.key_rounded,
-                  color: AppTheme.coral,
-                  size: 25,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _auth.enterAsSenior,
-                      style: GoogleFonts.playfairDisplay(
-                        fontSize: 18.5,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.deepForest,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      'Use the pass key your family gave you to begin.',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w500,
-                        color: AppTheme.muted,
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          // High-contrast, large passkey input
-          TextField(
-            controller: _elderlyPassKeyController,
-            textInputAction: TextInputAction.done,
-            textCapitalization: TextCapitalization.characters,
-            onSubmitted: (_) => _loginElderlyWithCode(),
-            style: GoogleFonts.dmSans(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 3.0,
-              color: AppTheme.deepForest,
-            ),
-            textAlign: TextAlign.center,
-            decoration: InputDecoration(
-              hintText: _auth.passKeyHint,
-              hintStyle: AppTheme.inputHint(
-                fontSize: 14.5,
-                fontWeight: FontWeight.w500,
-              ),
-              filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.9),
-              contentPadding:
-                  const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppTheme.radius18),
-                borderSide: BorderSide(
-                  color: AppTheme.coral.withValues(alpha: 0.25),
-                  width: 1.3,
-                ),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppTheme.radius18),
-                borderSide: BorderSide(
-                  color: AppTheme.coral.withValues(alpha: 0.25),
-                  width: 1.3,
-                ),
-              ),
-              focusedBorder: const OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(AppTheme.radius18)),
-                borderSide: BorderSide(
-                  color: AppTheme.coral,
-                  width: 2,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // Start Senior Companion Button
-          AnimatedScaleButton(
-            onTap: _isSeniorLoading ? null : () => _loginElderlyWithCode(),
-            child: Container(
-              height: 54,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    AppTheme.forest,
-                    AppTheme.emerald,
-                  ],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
-                borderRadius: BorderRadius.circular(AppTheme.radius18),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.forest.withValues(alpha: 0.3),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: _isSeniorLoading
-                  ? const Center(
-                      child: SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Colors.white,
-                        ),
-                      ),
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.play_circle_filled_rounded,
-                            size: 22, color: Colors.white),
-                        const SizedBox(width: 8),
-                        Text(
-                          _auth.startSeniorCompanion,
-                          style: AppTheme.buttonText(fontSize: 16),
-                        ),
-                      ],
-                    ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 

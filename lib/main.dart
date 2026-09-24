@@ -8,8 +8,11 @@ import 'navigation/app_shell.dart';
 import 'screens/caretaker/caretaker_dashboard_screen.dart';
 import 'screens/language_selection_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'data/local/local_store.dart';
 import 'services/app_assets.dart';
+import 'services/connectivity_service.dart';
 import 'services/local_model_manager.dart';
+import 'services/sync_service.dart';
 import 'state/app_settings.dart';
 import 'state/auth_session.dart';
 import 'state/auth_state.dart';
@@ -17,8 +20,20 @@ import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  GoogleFonts.config.allowRuntimeFetching = false;
+  // Allow runtime fetching as safety fallback so missing font weights do not trigger fatal unhandled exceptions.
+  // GoogleFonts checks locally bundled asset fonts first before attempting any network fetch.
+  GoogleFonts.config.allowRuntimeFetching = true;
   await AppAssets.init();
+
+  // Offline-first data layer: open the local Hive store BEFORE the first frame
+  // so screens can read memories/family/reminders instantly, online or offline.
+  await LocalStore().init();
+  // Single connectivity controller — reconciles OS network with a backend
+  // health ping and triggers a sync on every offline→online transition.
+  await ConnectivityService().init();
+  // Kick an initial reconcile: pull fresh data + flush any pending writes.
+  unawaited(SyncService().syncAll());
+
   LocalModelManager().init();
   runApp(const SmirithiSaathiApp());
 }
@@ -49,10 +64,20 @@ class _SmirithiSaathiAppState extends State<SmirithiSaathiApp> {
     if (kIsWeb) {
       _splashCompleted = true;
     } else {
-      Future.delayed(const Duration(milliseconds: 1600), () {
-        if (mounted) {
-          setState(() => _splashCompleted = true);
-        }
+      // IMPORTANT: don't start the countdown in initState. On a cold start the
+      // OS native splash (static logo) stays up for the whole engine+asset boot
+      // (~1–2s). If the timer runs during that window, `_splashCompleted` flips
+      // true *before* the animated splash ever paints, and the app jumps
+      // straight to the language screen — the animated splash gets skipped.
+      // Anchor it to the first rendered frame instead: that's the moment the
+      // native splash lifts and PremiumSplashScreen actually becomes visible,
+      // guaranteeing it gets its full on-screen time every launch.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(milliseconds: 4200), () {
+          if (mounted) {
+            setState(() => _splashCompleted = true);
+          }
+        });
       });
     }
   }
@@ -133,7 +158,7 @@ class _SmirithiSaathiAppState extends State<SmirithiSaathiApp> {
                 return ColoredBox(
                   color: const Color(0xFFFDFBF4),
                   child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 620),
+                    duration: const Duration(milliseconds: 780),
                     switchInCurve: Curves.easeOutCubic,
                     switchOutCurve: Curves.easeInCubic,
                     // Keep the incoming screen on top and both centered so the

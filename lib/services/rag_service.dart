@@ -1,8 +1,11 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/app_translations.dart';
+import '../data/memory_graph/graph_enums.dart';
+import '../data/memory_graph/graph_node.dart';
 import '../state/auth_state.dart';
 import 'api_service.dart';
+import 'memory_graph_service.dart';
 import 'memory_service.dart';
 
 /// Retrieval-Augmented Generation (RAG) Service for Smriti Saathi
@@ -205,6 +208,14 @@ class RagService {
       buffer.writeln('');
     }
 
+    // 4b. Personal Memory Graph — the structured web of people/places/events
+    //     Saathi has learned about THIS person's life (§14–15, §28 confidence).
+    final graphSection = _graphContext(lower, activeProfile?.id);
+    if (graphSection.isNotEmpty) {
+      buffer.writeln(graphSection);
+      buffer.writeln('');
+    }
+
     // 5. Safe Environment & Geofence Context (Wandering & Disorientation Care)
     if (lower.contains('where am i') ||
         lower.contains('where is my house') ||
@@ -234,6 +245,70 @@ class RagService {
     return buffer.toString().trim();
   }
 
+  /// Retrieve grounding from the personal memory graph — the structured web of
+  /// people, places, events and stories Saathi has learned. Confidence-aware:
+  /// inferred/unknown facts are flagged so the model never states a guess as
+  /// certain fact (§28 memory safety).
+  String _graphContext(String lowerQuery, String? patientId) {
+    final graph = MemoryGraphService();
+    graph.bindPatient(patientId);
+    final all = graph.nodes;
+    if (all.isEmpty) return '';
+
+    // Score each node by how well it matches the query words.
+    final words = lowerQuery
+        .split(RegExp(r'[^a-z0-9]+'))
+        .where((w) => w.length > 2)
+        .toSet();
+    int score(GraphNode n) {
+      final hay = '${n.label} ${n.subtitle}'.toLowerCase();
+      var s = 0;
+      if (n.label.isNotEmpty && lowerQuery.contains(n.label.toLowerCase())) {
+        s += 5;
+      }
+      for (final w in words) {
+        if (hay.contains(w)) s += 2;
+      }
+      return s;
+    }
+
+    var matched = all.where((n) => score(n) > 0).toList()
+      ..sort((a, b) => score(b).compareTo(score(a)));
+
+    // Reminiscence / "who / remember" style questions: if nothing matched by
+    // name, surface a few of the people & places Saathi is most sure about.
+    final wantsRecall = lowerQuery.contains('who') ||
+        lowerQuery.contains('remember') ||
+        lowerQuery.contains('memory') ||
+        lowerQuery.contains('family') ||
+        lowerQuery.contains('photo') ||
+        lowerQuery.contains('know');
+    if (matched.isEmpty && wantsRecall) {
+      matched = all
+          .where((n) =>
+              n.isConfirmed &&
+              (n.type == GraphNodeType.person ||
+                  n.type == GraphNodeType.place ||
+                  n.type == GraphNodeType.event))
+          .take(4)
+          .toList();
+    }
+    if (matched.isEmpty) return '';
+
+    final buffer = StringBuffer('[PERSONAL MEMORY GRAPH — WHAT SAATHI KNOWS]');
+    for (final n in matched.take(4)) {
+      final summary = graph.describe(n.id).trim();
+      final line = summary.isNotEmpty ? summary : '${n.label} (${n.type.id})';
+      final flag = n.confidence == MemoryConfidence.confirmed
+          ? ''
+          : n.confidence == MemoryConfidence.inferred
+              ? ' [NOT CONFIRMED — Saathi believes this but is not certain]'
+              : ' [UNCONFIRMED — gently ask, do not assert]';
+      buffer.writeln('- $line$flag');
+    }
+    return buffer.toString().trim();
+  }
+
   /// Construct a full RAG-augmented prompt for Qwen 2.5 1.5B (ChatML template)
   String buildRagPrompt({
     required String query,
@@ -254,6 +329,7 @@ RULES:
 2. Ground all answers about family, medications, daily schedule, and past trips in the retrieved patient facts below.
 3. Keep spoken replies to 1 or 2 clear, comforting sentences so they can be spoken naturally by text-to-speech.
 4. If asked about feelings, disorientation, or fears, offer immediate emotional reassurance that they are safe at home and loved.
+5. Only state as fact what is confirmed below. Anything marked NOT CONFIRMED or UNCONFIRMED must be offered gently as a question ("I think that may be your daughter Meera — does that sound right?"), never asserted. Never turn a guess into a certain fact.
 
 $ragContext
 <|im_end|>

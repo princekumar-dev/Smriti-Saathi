@@ -346,13 +346,13 @@ class AuthState extends ChangeNotifier {
     // 2. Offline fallback to local SharedPreferences
     final caretaker = _activeCaretaker;
     if (caretaker == null) {
-      return 'No caretaker account found with that email or phone. Please sign up first.';
+      return 'Unable to connect to backend server. Please verify the backend server is running (port 5000).';
     }
 
     final matchesContact = caretaker.email.toLowerCase() == input.toLowerCase() ||
         caretaker.phone.replaceAll(' ', '') == input.replaceAll(' ', '');
     if (!matchesContact) {
-      return 'Account not found. Please check your email or phone, or sign up.';
+      return 'Server is currently offline and this account is not saved locally.';
     }
 
     if (caretaker.password.isNotEmpty &&
