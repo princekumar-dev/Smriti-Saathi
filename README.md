@@ -4,6 +4,12 @@
 
 ### _"Because every memory matters…"_
 
+[![Flutter](https://img.shields.io/badge/Flutter-02569B?style=flat-square&logo=flutter&logoColor=white)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-0175C2?style=flat-square&logo=dart&logoColor=white)](https://dart.dev)
+[![Node.js](https://img.shields.io/badge/Node.js-Express-339933?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://www.mongodb.com)
+[![SIH](https://img.shields.io/badge/Built_for-Smart_India_Hackathon-e11d48?style=flat-square)](https://www.sih.gov.in/)
+
 **An offline-first, voice-first AI companion for elderly wellbeing.**
 
 Built for [Smart India Hackathon](https://www.sih.gov.in/) — a warm, calm, multilingual
@@ -109,7 +115,7 @@ works locally and syncs whenever a server becomes available.
 ## 📁 Project structure
 
 ```
-SIH/
+Smriti-Saathi/
 ├── lib/
 │   ├── main.dart                     # Boot: init Hive, connectivity, sync; splash; role routing
 │   ├── data/
